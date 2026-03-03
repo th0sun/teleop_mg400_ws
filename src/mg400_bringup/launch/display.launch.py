@@ -49,7 +49,7 @@ def generate_launch_description():
     )
 
     jsp_node = Node(
-        package='mg400_node',
+        package='joint_state_publisher_gui',
         executable='joint_state_publisher_gui',
         name='joint_state_publisher_gui',
         on_exit=Shutdown(),
