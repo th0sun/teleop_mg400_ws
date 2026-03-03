@@ -1,0 +1,2721 @@
+{
+  "title": "Dobot TCP/IP Remote Control Interface Commands",
+  "version": "V1.6.0.0",
+  "ports": {
+    "29999": "Dashboard commands (setting & status)",
+    "30003": "Motion commands",
+    "30004": "Real-time feedback every 8ms",
+    "30005": "Real-time feedback every 200ms",
+    "30006": "Real-time feedback every 50ms (configurable)"
+  },
+  "commands": [
+    {
+      "section": "2.1 Control Command",
+      "name": "EnableRobot",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "EnableRobot(load, centerX, centerY, centerZ)",
+      "description": "Enable the robot. Required before executing any queue commands (motion, IO, etc.).",
+      "parameters": [
+        {
+          "name": "load",
+          "type": "double",
+          "required": false,
+          "description": "Load weight. Must not exceed robot model's load range. Unit: kg."
+        },
+        {
+          "name": "centerX",
+          "type": "double",
+          "required": false,
+          "description": "Eccentric distance in X-axis direction. Range: -500 to 500. Unit: mm."
+        },
+        {
+          "name": "centerY",
+          "type": "double",
+          "required": false,
+          "description": "Eccentric distance in Y-axis direction. Range: -500 to 500. Unit: mm."
+        },
+        {
+          "name": "centerZ",
+          "type": "double",
+          "required": false,
+          "description": "Eccentric distance in Z-axis direction. Range: -500 to 500. Unit: mm."
+        }
+      ],
+      "param_count_options": [
+        0,
+        1,
+        4
+      ],
+      "return": "ErrorID,{},EnableRobot(load,centerX,centerY,centerZ);",
+      "examples": [
+        "EnableRobot()",
+        "EnableRobot(0.5)",
+        "EnableRobot(0.5,0,0,5.5)"
+      ]
+    },
+    {
+      "section": "2.1 Control Command",
+      "name": "DisableRobot",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "DisableRobot()",
+      "description": "Disable the robot.",
+      "parameters": [],
+      "return": "ErrorID,{},DisableRobot();",
+      "examples": [
+        "DisableRobot()"
+      ]
+    },
+    {
+      "section": "2.1 Control Command",
+      "name": "ClearError",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "ClearError()",
+      "description": "Clear the alarms of the robot. After clearing, use Continue command to restart the motion queue. Some alarms cannot be cleared without resolving the root cause or restarting the controller.",
+      "parameters": [],
+      "return": "ErrorID,{},ClearError();",
+      "examples": [
+        "ClearError()"
+      ]
+    },
+    {
+      "section": "2.1 Control Command",
+      "name": "ResetRobot",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "ResetRobot()",
+      "description": "Stop the robot and clear the planned command queue.",
+      "parameters": [],
+      "return": "ErrorID,{},ResetRobot();",
+      "examples": [
+        "ResetRobot()"
+      ]
+    },
+    {
+      "section": "2.1 Control Command",
+      "name": "RunScript",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "RunScript(projectName)",
+      "description": "Run the specified project.",
+      "parameters": [
+        {
+          "name": "projectName",
+          "type": "string",
+          "required": true,
+          "description": "Name of the project to run."
+        }
+      ],
+      "return": "ErrorID,{},RunScript(projectName);",
+      "examples": [
+        "RunScript(\"demo\")"
+      ]
+    },
+    {
+      "section": "2.1 Control Command",
+      "name": "StopScript",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "StopScript()",
+      "description": "Stop running the current project.",
+      "parameters": [],
+      "return": "ErrorID,{},StopScript();",
+      "examples": [
+        "StopScript()"
+      ]
+    },
+    {
+      "section": "2.1 Control Command",
+      "name": "PauseScript",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "PauseScript()",
+      "description": "Pause the running project.",
+      "parameters": [],
+      "return": "ErrorID,{},PauseScript();",
+      "examples": [
+        "PauseScript()"
+      ]
+    },
+    {
+      "section": "2.1 Control Command",
+      "name": "ContinueScript",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "ContinueScript()",
+      "description": "Continue running the paused project.",
+      "parameters": [],
+      "return": "ErrorID,{},ContinueScript();",
+      "examples": [
+        "ContinueScript()"
+      ]
+    },
+    {
+      "section": "2.1 Control Command",
+      "name": "Pause",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "Pause()",
+      "description": "Pause motion commands not delivered by project (e.g. TCP motion commands), without clearing the motion queue.",
+      "parameters": [],
+      "return": "ErrorID,{},Pause();",
+      "examples": [
+        "Pause()"
+      ]
+    },
+    {
+      "section": "2.1 Control Command",
+      "name": "Continue",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "Continue()",
+      "description": "Continue running the motion command paused by the Pause command.",
+      "parameters": [],
+      "return": "ErrorID,{},Continue();",
+      "examples": [
+        "Continue()"
+      ]
+    },
+    {
+      "section": "2.1 Control Command",
+      "name": "StartDrag",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "StartDrag()",
+      "description": "Enter drag mode. Cannot be used when robot is in error status.",
+      "parameters": [],
+      "return": "ErrorID,{},StartDrag();",
+      "examples": [
+        "StartDrag()"
+      ]
+    },
+    {
+      "section": "2.1 Control Command",
+      "name": "StopDrag",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "StopDrag()",
+      "description": "Exit drag mode. Cannot be used when robot is in error status.",
+      "parameters": [],
+      "return": "ErrorID,{},StopDrag();",
+      "examples": [
+        "StopDrag()"
+      ]
+    },
+    {
+      "section": "2.1 Control Command",
+      "name": "EmergencyStop",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "EmergencyStop()",
+      "description": "Emergency stop the robot arm. Robot will power off and alarm. Must clear alarm before re-enabling.",
+      "parameters": [],
+      "return": "ErrorID,{},EmergencyStop();",
+      "examples": [
+        "EmergencyStop()"
+      ]
+    },
+    {
+      "section": "2.1 Control Command",
+      "name": "wait",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "wait(time)",
+      "description": "Delay the command queue for a specified time. Supported by controller V1.5.9 and above.",
+      "parameters": [
+        {
+          "name": "time",
+          "type": "int",
+          "required": true,
+          "description": "Delay duration. Unit: ms. Range: (0, 3600000)."
+        }
+      ],
+      "return": "ErrorID,{},wait(time);",
+      "examples": [
+        "wait(1000)"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "SpeedFactor",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "SpeedFactor(ratio)",
+      "description": "Set global speed ratio. Affects both jog and playback speeds. Only valid in current TCP/IP control mode.",
+      "parameters": [
+        {
+          "name": "ratio",
+          "type": "int",
+          "required": true,
+          "description": "Global speed ratio. Range: 1 to 100."
+        }
+      ],
+      "return": "ErrorID,{},SpeedFactor(ratio);",
+      "examples": [
+        "SpeedFactor(80)"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "User",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "User(index)",
+      "description": "Set the global user coordinate system. Only valid in current TCP/IP control mode. Returns -1 if index does not exist.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Index of the calibrated user coordinate system. Must be calibrated in software first."
+        }
+      ],
+      "return": "ErrorID,{},User(index);",
+      "examples": [
+        "User(1)"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "Tool",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "Tool(index)",
+      "description": "Set the global tool coordinate system. Only valid in current TCP/IP control mode. Returns -1 if index does not exist.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Index of the calibrated tool coordinate system. Must be calibrated in software first."
+        }
+      ],
+      "return": "ErrorID,{},Tool(index);",
+      "examples": [
+        "Tool(1)"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "SetPayLoad",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "SetPayLoad(weight, inertia)",
+      "description": "Set the load of the robot arm.",
+      "parameters": [
+        {
+          "name": "weight",
+          "type": "float",
+          "required": true,
+          "description": "Load weight. Must not exceed robot model's load range. Unit: kg."
+        },
+        {
+          "name": "inertia",
+          "type": "float",
+          "required": false,
+          "description": "Load inertia. Unit: kgm²."
+        }
+      ],
+      "return": "ErrorID,{},SetPayLoad(weight,inertia);",
+      "examples": [
+        "SetPayLoad(0.3)"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "AccJ",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "AccJ(R)",
+      "description": "Set acceleration ratio of joint motion. Default is 100 when not set.",
+      "parameters": [
+        {
+          "name": "R",
+          "type": "int",
+          "required": true,
+          "description": "Acceleration ratio. Range: [1, 100]."
+        }
+      ],
+      "return": "ErrorID,{},AccJ(R);",
+      "examples": [
+        "AccJ(50)"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "AccL",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "AccL(R)",
+      "description": "Set acceleration ratio of linear and arc motion. Default is 100 when not set.",
+      "parameters": [
+        {
+          "name": "R",
+          "type": "int",
+          "required": true,
+          "description": "Acceleration ratio. Range: [1, 100]."
+        }
+      ],
+      "return": "ErrorID,{},AccL(R);",
+      "examples": [
+        "AccL(50)"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "SpeedJ",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "SpeedJ(R)",
+      "description": "Set speed ratio of joint motion. Default is 100 when not set.",
+      "parameters": [
+        {
+          "name": "R",
+          "type": "int",
+          "required": true,
+          "description": "Speed ratio. Range: [1, 100]."
+        }
+      ],
+      "return": "ErrorID,{},SpeedJ(R);",
+      "examples": [
+        "SpeedJ(50)"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "SpeedL",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "SpeedL(R)",
+      "description": "Set speed ratio of linear and arc motion. Default is 100 when not set.",
+      "parameters": [
+        {
+          "name": "R",
+          "type": "int",
+          "required": true,
+          "description": "Speed ratio. Range: [1, 100]."
+        }
+      ],
+      "return": "ErrorID,{},SpeedL(R);",
+      "examples": [
+        "SpeedL(50)"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "Arch",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "Arch(Index)",
+      "description": "Set the index of global jump parameter for Jump motion. Default is 0 when not set.",
+      "parameters": [
+        {
+          "name": "Index",
+          "type": "int",
+          "required": true,
+          "description": "Jump parameter index. Must be set in software before use."
+        }
+      ],
+      "return": "ErrorID,{},Arch(Index);",
+      "examples": [
+        "Arch(1)"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "CP",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "CP(R)",
+      "description": "Set the continuous path (CP) ratio. Controls whether robot transitions at right angle or curved when passing through intermediate points during continuous motion. Invalid for Jump motion. Default is 0.",
+      "parameters": [
+        {
+          "name": "R",
+          "type": "unsigned int",
+          "required": true,
+          "description": "Continuous path ratio. Range: [0, 100]."
+        }
+      ],
+      "return": "ErrorID,{},CP(R);",
+      "examples": [
+        "CP(50)"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "SetArmOrientation",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "SetArmOrientation(LorR)",
+      "description": "Set the hand system (arm orientation) of the target point for M1 Pro robot. Determines unique posture when target is a Cartesian coordinate point.",
+      "parameters": [
+        {
+          "name": "LorR",
+          "type": "int",
+          "required": true,
+          "description": "0: left-hand system, 1: right-hand system."
+        }
+      ],
+      "return": "ErrorID,{},SetArmOrientation(LorR);",
+      "examples": [
+        "SetArmOrientation(1)"
+      ],
+      "notes": "This command is for M1 Pro only."
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "SetCollisionLevel",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "SetCollisionLevel(level)",
+      "description": "Set the collision detection level. Only valid in current TCP/IP control mode.",
+      "parameters": [
+        {
+          "name": "level",
+          "type": "int",
+          "required": true,
+          "description": "0: disable collision detection. 1–5: sensitivity level (higher number = higher sensitivity)."
+        }
+      ],
+      "return": "ErrorID,{},SetCollisionLevel(level);",
+      "examples": [
+        "SetCollisionLevel(1)"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "SetUser",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "SetUser(index, table)",
+      "description": "Modify the specified user coordinate system. Supported by controller V1.6.0 and above.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Index of user coordinate system. Range: [0, 9]. Index 0 is the base coordinate system."
+        },
+        {
+          "name": "table",
+          "type": "array {x,y,z,r}",
+          "required": true,
+          "description": "New user coordinate system values. Format: {x, y, z, r}. Recommended to obtain via CalcUser command."
+        }
+      ],
+      "return": "ErrorID,{},SetUser(index,table);",
+      "examples": [
+        "SetUser(1,{10,10,10,0})"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "CalcUser",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "CalcUser(index, matrix_direction, table)",
+      "description": "Calculate a new user coordinate system by offsetting an existing one. Supported by controller V1.6.0 and above.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Index of user coordinate system. Range: [0, 9]."
+        },
+        {
+          "name": "matrix_direction",
+          "type": "int",
+          "required": true,
+          "description": "1: left multiplication (deflect along base coordinate system). 0: right multiplication (deflect along itself)."
+        },
+        {
+          "name": "table",
+          "type": "array {x,y,z,r}",
+          "required": true,
+          "description": "Offset values. Format: {x, y, z, r}."
+        }
+      ],
+      "return": "ErrorID,{x,y,z,r},CalcUser(index,matrix_direction,table);",
+      "examples": [
+        "CalcUser(1,1,{10,10,10,10})",
+        "CalcUser(1,0,{10,10,10,10})"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "SetTool",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "SetTool(index, table)",
+      "description": "Modify the specified tool coordinate system. Supported by controller V1.6.0 and above.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Index of tool coordinate system. Range: [0, 9]. Index 0 is the flange coordinate system."
+        },
+        {
+          "name": "table",
+          "type": "array {x,y,z,r}",
+          "required": true,
+          "description": "New tool coordinate system values. Format: {x, y, z, r}. Recommended to obtain via CalcTool command."
+        }
+      ],
+      "return": "ErrorID,{},SetTool(index,table);",
+      "examples": [
+        "SetTool(1,{10,10,10,0})"
+      ]
+    },
+    {
+      "section": "2.2 Settings Command",
+      "name": "CalcTool",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "CalcTool(index, matrix_direction, table)",
+      "description": "Calculate a new tool coordinate system by offsetting an existing one. Supported by controller V1.6.0 and above.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Index of tool coordinate system. Range: [0, 9]."
+        },
+        {
+          "name": "matrix_direction",
+          "type": "int",
+          "required": true,
+          "description": "1: left multiplication (deflect along flange coordinate system). 0: right multiplication (deflect along itself)."
+        },
+        {
+          "name": "table",
+          "type": "array {x,y,z,r}",
+          "required": true,
+          "description": "Offset values. Format: {x, y, z, r}."
+        }
+      ],
+      "return": "ErrorID,{x,y,z,r},CalcTool(index,matrix_direction,table);",
+      "examples": [
+        "CalcTool(1,1,{10,10,10,10})",
+        "CalcTool(1,0,{10,10,10,10})"
+      ]
+    },
+    {
+      "section": "2.3 Calculating and Obtaining Command",
+      "name": "RobotMode",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "RobotMode()",
+      "description": "Get the current status of the robot.",
+      "parameters": [],
+      "return": "ErrorID,{Value},RobotMode();",
+      "return_values": {
+        "1": "ROBOT_MODE_INIT - Initialized status",
+        "2": "ROBOT_MODE_BRAKE_OPEN - Brake switched on",
+        "3": "ROBOT_MODE_POWER_STATUS - Power-off status",
+        "4": "ROBOT_MODE_DISABLED - Disabled (no brake switched on)",
+        "5": "ROBOT_MODE_ENABLE - Enabled and idle",
+        "6": "ROBOT_MODE_BACKDRIVE - Drag mode",
+        "7": "ROBOT_MODE_RUNNING - Running (trajectory/motion/project)",
+        "8": "ROBOT_MODE_RECORDING - Trajectory recording mode",
+        "9": "ROBOT_MODE_ERROR - Uncleared alarms (highest priority)",
+        "10": "ROBOT_MODE_PAUSE - Pause status",
+        "11": "ROBOT_MODE_JOG - Jogging status"
+      },
+      "examples": [
+        "RobotMode()"
+      ]
+    },
+    {
+      "section": "2.3 Calculating and Obtaining Command",
+      "name": "GetAngle",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "GetAngle()",
+      "description": "Get the joint coordinates of the current posture.",
+      "parameters": [],
+      "return": "ErrorID,{J1,J2,J3,J4},GetAngle();",
+      "examples": [
+        "GetAngle()"
+      ]
+    },
+    {
+      "section": "2.3 Calculating and Obtaining Command",
+      "name": "GetPose",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "GetPose(User=0, Tool=0)",
+      "description": "Get the Cartesian coordinates of the current posture in specified coordinate systems.",
+      "parameters": [
+        {
+          "name": "User",
+          "type": "int",
+          "required": false,
+          "description": "Index of calibrated user coordinate system. Defaults to global user coordinate system."
+        },
+        {
+          "name": "Tool",
+          "type": "int",
+          "required": false,
+          "description": "Index of calibrated tool coordinate system. Defaults to global tool coordinate system."
+        }
+      ],
+      "return": "ErrorID,{X,Y,Z,R},GetPose();",
+      "examples": [
+        "GetPose()",
+        "GetPose(User=1,Tool=0)"
+      ]
+    },
+    {
+      "section": "2.3 Calculating and Obtaining Command",
+      "name": "GetErrorID",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "GetErrorID()",
+      "description": "Get current error codes of the robot. Returns alarm info for controller, algorithm, and four servo joints.",
+      "parameters": [],
+      "return": "ErrorID,{[[id,...,id],[id],[id],[id],[id],[id],[id]]},GetErrorID();",
+      "notes": "Collision detection alarm value is -2. First array is controller/algorithm alarms. Last four arrays are servo alarms per joint.",
+      "examples": [
+        "GetErrorID()"
+      ]
+    },
+    {
+      "section": "2.3 Calculating and Obtaining Command",
+      "name": "PositiveSolution",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "PositiveSolution(J1, J2, J3, J4, User, Tool)",
+      "description": "Forward kinematics: calculate Cartesian coordinates of the robot end based on given joint angles.",
+      "parameters": [
+        {
+          "name": "J1",
+          "type": "double",
+          "required": true,
+          "description": "J1-axis angle. Unit: °."
+        },
+        {
+          "name": "J2",
+          "type": "double",
+          "required": true,
+          "description": "J2-axis angle. Unit: °."
+        },
+        {
+          "name": "J3",
+          "type": "double",
+          "required": true,
+          "description": "J3-axis angle. Unit: °."
+        },
+        {
+          "name": "J4",
+          "type": "double",
+          "required": true,
+          "description": "J4-axis angle. Unit: °."
+        },
+        {
+          "name": "User",
+          "type": "int",
+          "required": true,
+          "description": "Index of calibrated user coordinate system."
+        },
+        {
+          "name": "Tool",
+          "type": "int",
+          "required": true,
+          "description": "Index of calibrated tool coordinate system."
+        }
+      ],
+      "return": "ErrorID,{x,y,z,r},PositiveSolution(J1,J2,J3,J4,User,Tool);",
+      "examples": [
+        "PositiveSolution(0,0,-90,0,1,1)"
+      ]
+    },
+    {
+      "section": "2.3 Calculating and Obtaining Command",
+      "name": "InverseSolution",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "InverseSolution(X, Y, Z, R, User, Tool, isJointNear, JointNear)",
+      "description": "Inverse kinematics: calculate joint angles based on given Cartesian coordinates. Selects solution closest to current or specified joint angles.",
+      "parameters": [
+        {
+          "name": "X",
+          "type": "double",
+          "required": true,
+          "description": "X-axis position. Unit: mm."
+        },
+        {
+          "name": "Y",
+          "type": "double",
+          "required": true,
+          "description": "Y-axis position. Unit: mm."
+        },
+        {
+          "name": "Z",
+          "type": "double",
+          "required": true,
+          "description": "Z-axis position. Unit: mm."
+        },
+        {
+          "name": "R",
+          "type": "double",
+          "required": true,
+          "description": "R-axis position. Unit: °."
+        },
+        {
+          "name": "User",
+          "type": "int",
+          "required": true,
+          "description": "Index of calibrated user coordinate system."
+        },
+        {
+          "name": "Tool",
+          "type": "int",
+          "required": true,
+          "description": "Index of calibrated tool coordinate system."
+        },
+        {
+          "name": "isJointNear",
+          "type": "int",
+          "required": false,
+          "description": "0 or null: use current joint angle to select solution. 1: use JointNear data to select solution."
+        },
+        {
+          "name": "JointNear",
+          "type": "string",
+          "required": false,
+          "description": "Reference joint coordinates for solution selection."
+        }
+      ],
+      "return": "ErrorID,{J1,J2,J3,J4},InverseSolution(...);",
+      "examples": [
+        "InverseSolution(473.0,-141.0,469.0,-180.0,0,0)",
+        "InverseSolution(473.0,-141.0,469.0,-180.0,0,0,1,{0,0,-90,0})"
+      ]
+    },
+    {
+      "section": "2.3 Calculating and Obtaining Command",
+      "name": "PalletCreate",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "PalletCreate(P1, P2, P3, P4, row=0, col=0, Palletname)",
+      "description": "Create a pallet grid. Defines all pallet points automatically from 4 corner coordinates. Up to 20 pallets can be created. All pallets are deleted when exiting TCP mode. Supported by controller V1.6.0 and above.",
+      "parameters": [
+        {
+          "name": "P1",
+          "type": "array[double]",
+          "required": true,
+          "description": "Cartesian coordinates of corner P1. Format: {X, Y, Z, R}."
+        },
+        {
+          "name": "P2",
+          "type": "array[double]",
+          "required": true,
+          "description": "Cartesian coordinates of corner P2. Same format as P1."
+        },
+        {
+          "name": "P3",
+          "type": "array[double]",
+          "required": true,
+          "description": "Cartesian coordinates of corner P3. Same format as P1."
+        },
+        {
+          "name": "P4",
+          "type": "array[double]",
+          "required": true,
+          "description": "Cartesian coordinates of corner P4. Same format as P1."
+        },
+        {
+          "name": "row",
+          "type": "int",
+          "required": true,
+          "description": "Number of rows in the pallet."
+        },
+        {
+          "name": "col",
+          "type": "int",
+          "required": true,
+          "description": "Number of columns in the pallet."
+        },
+        {
+          "name": "Palletname",
+          "type": "string",
+          "required": true,
+          "description": "Unique pallet name."
+        }
+      ],
+      "return": "ErrorID,{number},PalletCreate(...); where {number} = total pallets created so far.",
+      "examples": [
+        "PalletCreate({56,-568,337,175.5755},{156,-568,337,175.5755},{156,-468,337,175.5755},{56,-468,337,175.5755},row=10,col=10,pallet1)"
+      ]
+    },
+    {
+      "section": "2.3 Calculating and Obtaining Command",
+      "name": "GetPalletPose",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "GetPalletPose(Palletname, index)",
+      "description": "Get Cartesian coordinates of a specific point in a created pallet. Supported by controller V1.6.0 and above.",
+      "parameters": [
+        {
+          "name": "Palletname",
+          "type": "string",
+          "required": true,
+          "description": "Name of the pallet."
+        },
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Point index, starting from 1."
+        }
+      ],
+      "return": "ErrorID,{X,Y,Z,R},GetPalletPose(Palletname,index);",
+      "examples": [
+        "GetPalletPose(pallet1,5)"
+      ]
+    },
+    {
+      "section": "2.4 IO Command",
+      "name": "DO",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "DO(index, status)",
+      "description": "Set the status of a digital output port (queue command — executes in sequence).",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "DO port index."
+        },
+        {
+          "name": "status",
+          "type": "int",
+          "required": true,
+          "description": "1: signal on, 0: signal off."
+        }
+      ],
+      "return": "ErrorID,{},DO(index,status);",
+      "examples": [
+        "DO(1,1)"
+      ]
+    },
+    {
+      "section": "2.4 IO Command",
+      "name": "DOExecute",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "DOExecute(index, status)",
+      "description": "Set the status of a digital output port immediately, regardless of current command queue.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "DO port index."
+        },
+        {
+          "name": "status",
+          "type": "int",
+          "required": true,
+          "description": "1: signal on, 0: signal off."
+        }
+      ],
+      "return": "ErrorID,{},DOExecute(index,status);",
+      "examples": [
+        "DOExecute(1,1)"
+      ]
+    },
+    {
+      "section": "2.4 IO Command",
+      "name": "DOGroup",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "DOGroup(index1, value1, index2, value2, ..., indexN, valueN)",
+      "description": "Set the status of multiple digital output ports simultaneously (immediate command).",
+      "parameters": [
+        {
+          "name": "index1..indexN",
+          "type": "int",
+          "required": true,
+          "description": "DO port index."
+        },
+        {
+          "name": "value1..valueN",
+          "type": "int",
+          "required": true,
+          "description": "1: signal on, 0: signal off."
+        }
+      ],
+      "return": "ErrorID,{},DOGroup(index1,value1,...,indexN,valueN);",
+      "examples": [
+        "DOGroup(4,1,6,0,2,1,7,0)"
+      ]
+    },
+    {
+      "section": "2.4 IO Command",
+      "name": "ToolDO",
+      "port": 29999,
+      "type": "queue",
+      "syntax": "ToolDO(index, status)",
+      "description": "Set the status of a tool digital output port (queue command).",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Tool DO port index."
+        },
+        {
+          "name": "status",
+          "type": "int",
+          "required": true,
+          "description": "1: signal on, 0: signal off."
+        }
+      ],
+      "return": "ErrorID,{},ToolDO(index,status);",
+      "examples": [
+        "ToolDO(1,1)"
+      ]
+    },
+    {
+      "section": "2.4 IO Command",
+      "name": "ToolDOExecute",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "ToolDOExecute(index, status)",
+      "description": "Set the status of a tool digital output port immediately, regardless of current command queue.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Tool DO port index."
+        },
+        {
+          "name": "status",
+          "type": "int",
+          "required": true,
+          "description": "1: signal on, 0: signal off."
+        }
+      ],
+      "return": "ErrorID,{},ToolDOExecute(index,status);",
+      "examples": [
+        "ToolDOExecute(1,1)"
+      ]
+    },
+    {
+      "section": "2.4 IO Command",
+      "name": "DI",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "DI(index)",
+      "description": "Get the status of a digital input port.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "DI port index."
+        }
+      ],
+      "return": "ErrorID,{value},DI(index); where value: 0 = no signal, 1 = signal.",
+      "examples": [
+        "DI(1)"
+      ]
+    },
+    {
+      "section": "2.4 IO Command",
+      "name": "ToolDI",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "ToolDI(index)",
+      "description": "Get the status of a tool digital input port.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Tool DI port index."
+        }
+      ],
+      "return": "ErrorID,{value},ToolDI(index); where value: 0 = no signal, 1 = signal.",
+      "examples": [
+        "ToolDI(1)"
+      ]
+    },
+    {
+      "section": "2.5 Modbus Command",
+      "name": "ModbusCreate",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "ModbusCreate(ip, port, slave_id, isRTU)",
+      "description": "Create a Modbus master and establish connection with a slave. Supports up to 5 devices.",
+      "parameters": [
+        {
+          "name": "ip",
+          "type": "string",
+          "required": true,
+          "description": "IP address of the slave station."
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "required": true,
+          "description": "Port of the slave station."
+        },
+        {
+          "name": "slave_id",
+          "type": "int",
+          "required": true,
+          "description": "ID of the slave station."
+        },
+        {
+          "name": "isRTU",
+          "type": "int",
+          "required": false,
+          "description": "null or 0: ModbusTCP. 1: ModbusRTU."
+        }
+      ],
+      "return": "ErrorID,{index},ModbusCreate(...); where index is master index (0–4).",
+      "examples": [
+        "ModbusCreate(127.0.0.1,60000,1,1)"
+      ]
+    },
+    {
+      "section": "2.5 Modbus Command",
+      "name": "ModbusClose",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "ModbusClose(index)",
+      "description": "Disconnect from Modbus slave and release the master.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Master index (0–4)."
+        }
+      ],
+      "return": "ErrorID,{},ModbusClose(index);",
+      "examples": [
+        "ModbusClose(0)"
+      ]
+    },
+    {
+      "section": "2.5 Modbus Command",
+      "name": "GetInBits",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "GetInBits(index, addr, count)",
+      "description": "Read discrete input (contact register) values from Modbus slave.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Master index."
+        },
+        {
+          "name": "addr",
+          "type": "int",
+          "required": true,
+          "description": "Starting address of the contact register."
+        },
+        {
+          "name": "count",
+          "type": "int",
+          "required": true,
+          "description": "Number of values to read. Range: [1, 16]."
+        }
+      ],
+      "return": "ErrorID,{value1,...,valueN},GetInBits(index,addr,count);",
+      "examples": [
+        "GetInBits(0,3000,5)"
+      ]
+    },
+    {
+      "section": "2.5 Modbus Command",
+      "name": "GetInRegs",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "GetInRegs(index, addr, count, valType)",
+      "description": "Read input register values with specified data type from Modbus slave.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Master index."
+        },
+        {
+          "name": "addr",
+          "type": "int",
+          "required": true,
+          "description": "Starting address of the input register."
+        },
+        {
+          "name": "count",
+          "type": "int",
+          "required": true,
+          "description": "Number of values to read. Range: [1, 4]."
+        },
+        {
+          "name": "valType",
+          "type": "string",
+          "required": false,
+          "description": "null/U16: 16-bit uint; U32: 32-bit uint; F32: 32-bit float; F64: 64-bit double."
+        }
+      ],
+      "return": "ErrorID,{value1,...,valueN},GetInRegs(index,addr,count);",
+      "examples": [
+        "GetInRegs(0,4000,3)"
+      ]
+    },
+    {
+      "section": "2.5 Modbus Command",
+      "name": "GetCoils",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "GetCoils(index, addr, count)",
+      "description": "Read coil register values from Modbus slave.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Master index."
+        },
+        {
+          "name": "addr",
+          "type": "int",
+          "required": true,
+          "description": "Starting address of the coil register."
+        },
+        {
+          "name": "count",
+          "type": "int",
+          "required": true,
+          "description": "Number of values to read. Range: [1, 16]."
+        }
+      ],
+      "return": "ErrorID,{value1,...,valueN},GetCoils(index,addr,count);",
+      "examples": [
+        "GetCoils(0,1000,3)"
+      ]
+    },
+    {
+      "section": "2.5 Modbus Command",
+      "name": "SetCoils",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "SetCoils(index, addr, count, valTab)",
+      "description": "Write values to coil register addresses on Modbus slave.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Master index."
+        },
+        {
+          "name": "addr",
+          "type": "int",
+          "required": true,
+          "description": "Starting address of the coil register."
+        },
+        {
+          "name": "count",
+          "type": "int",
+          "required": true,
+          "description": "Number of values to write. Range: [1, 16]."
+        },
+        {
+          "name": "valTab",
+          "type": "string",
+          "required": true,
+          "description": "Values to write (count must match)."
+        }
+      ],
+      "return": "ErrorID,{},SetCoils(index,addr,count,valTab);",
+      "examples": [
+        "SetCoils(0,1000,3,{1,0,1})"
+      ]
+    },
+    {
+      "section": "2.5 Modbus Command",
+      "name": "GetHoldRegs",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "GetHoldRegs(index, addr, count, valType)",
+      "description": "Read holding register values with specified data type from Modbus slave.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Master index."
+        },
+        {
+          "name": "addr",
+          "type": "int",
+          "required": true,
+          "description": "Starting address of the holding register."
+        },
+        {
+          "name": "count",
+          "type": "int",
+          "required": true,
+          "description": "Number of values to read. Range: [1, 4]."
+        },
+        {
+          "name": "valType",
+          "type": "string",
+          "required": false,
+          "description": "null/U16: 16-bit uint; U32: 32-bit uint; F32: 32-bit float; F64: 64-bit double."
+        }
+      ],
+      "return": "ErrorID,{value1,...,valueN},GetHoldRegs(index,addr,count,valType);",
+      "examples": [
+        "GetHoldRegs(0,3095,1)"
+      ]
+    },
+    {
+      "section": "2.5 Modbus Command",
+      "name": "SetHoldRegs",
+      "port": 29999,
+      "type": "immediate",
+      "syntax": "SetHoldRegs(index, addr, count, valTab, valType)",
+      "description": "Write values to holding register addresses on Modbus slave with specified data type.",
+      "parameters": [
+        {
+          "name": "index",
+          "type": "int",
+          "required": true,
+          "description": "Master index."
+        },
+        {
+          "name": "addr",
+          "type": "int",
+          "required": true,
+          "description": "Starting address of the holding register."
+        },
+        {
+          "name": "count",
+          "type": "int",
+          "required": true,
+          "description": "Number of values to write. Range: [1, 4]."
+        },
+        {
+          "name": "valTab",
+          "type": "string",
+          "required": true,
+          "description": "Values to write (count must match)."
+        },
+        {
+          "name": "valType",
+          "type": "string",
+          "required": false,
+          "description": "null/U16: 16-bit uint; U32: 32-bit uint; F32: 32-bit float; F64: 64-bit double."
+        }
+      ],
+      "return": "ErrorID,{},SetHoldRegs(index,addr,count,valTab,valType);",
+      "examples": [
+        "SetHoldRegs(0,3095,2,{6000,300},U16)"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "MovJ",
+      "port": 30003,
+      "type": "queue",
+      "syntax": "MovJ(X, Y, Z, R, User=index, Tool=index, SpeedJ=R, AccJ=R, CP=R)",
+      "description": "Move from current position to target Cartesian position via joint motion. Non-linear trajectory; all joints complete simultaneously.",
+      "parameters": [
+        {
+          "name": "X",
+          "type": "double",
+          "required": true,
+          "description": "X-axis target position. Unit: mm."
+        },
+        {
+          "name": "Y",
+          "type": "double",
+          "required": true,
+          "description": "Y-axis target position. Unit: mm."
+        },
+        {
+          "name": "Z",
+          "type": "double",
+          "required": true,
+          "description": "Z-axis target position. Unit: mm."
+        },
+        {
+          "name": "R",
+          "type": "double",
+          "required": true,
+          "description": "R-axis target position. Unit: °."
+        },
+        {
+          "name": "User",
+          "type": "int",
+          "required": false,
+          "description": "User coordinate system index."
+        },
+        {
+          "name": "Tool",
+          "type": "int",
+          "required": false,
+          "description": "Tool coordinate system index."
+        },
+        {
+          "name": "SpeedJ",
+          "type": "int",
+          "required": false,
+          "description": "Joint speed ratio. Range: [1, 100]."
+        },
+        {
+          "name": "AccJ",
+          "type": "int",
+          "required": false,
+          "description": "Joint acceleration ratio. Range: [1, 100]."
+        },
+        {
+          "name": "CP",
+          "type": "int",
+          "required": false,
+          "description": "Continuous path ratio. Range: [0, 100]."
+        }
+      ],
+      "return": "ErrorID,{},MovJ(X,Y,Z,R);",
+      "examples": [
+        "MovJ(-100,100,200,150,AccJ=50)"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "MovL",
+      "port": 30003,
+      "type": "queue",
+      "syntax": "MovL(X, Y, Z, R, User=index, Tool=index, SpeedL=R, AccL=R, CP=R)",
+      "description": "Move from current position to target Cartesian position via linear motion.",
+      "parameters": [
+        {
+          "name": "X",
+          "type": "double",
+          "required": true,
+          "description": "X-axis target position. Unit: mm."
+        },
+        {
+          "name": "Y",
+          "type": "double",
+          "required": true,
+          "description": "Y-axis target position. Unit: mm."
+        },
+        {
+          "name": "Z",
+          "type": "double",
+          "required": true,
+          "description": "Z-axis target position. Unit: mm."
+        },
+        {
+          "name": "R",
+          "type": "double",
+          "required": true,
+          "description": "R-axis target position. Unit: °."
+        },
+        {
+          "name": "User",
+          "type": "int",
+          "required": false,
+          "description": "User coordinate system index."
+        },
+        {
+          "name": "Tool",
+          "type": "int",
+          "required": false,
+          "description": "Tool coordinate system index."
+        },
+        {
+          "name": "SpeedL",
+          "type": "int",
+          "required": false,
+          "description": "Linear speed ratio. Range: [1, 100]."
+        },
+        {
+          "name": "AccL",
+          "type": "int",
+          "required": false,
+          "description": "Linear acceleration ratio. Range: [1, 100]."
+        },
+        {
+          "name": "CP",
+          "type": "int",
+          "required": false,
+          "description": "Continuous path ratio. Range: [0, 100]."
+        }
+      ],
+      "return": "ErrorID,{},MovL(X,Y,Z,R);",
+      "examples": [
+        "MovL(-100,100,200,150,SpeedL=60)"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "JointMovJ",
+      "port": 30003,
+      "type": "queue",
+      "syntax": "JointMovJ(J1, J2, J3, J4, SpeedJ=R, AccJ=R, CP=R)",
+      "description": "Move from current position to target joint position via joint motion.",
+      "parameters": [
+        {
+          "name": "J1",
+          "type": "double",
+          "required": true,
+          "description": "J1-axis target position. Unit: °."
+        },
+        {
+          "name": "J2",
+          "type": "double",
+          "required": true,
+          "description": "J2-axis target position. Unit: °."
+        },
+        {
+          "name": "J3",
+          "type": "double",
+          "required": true,
+          "description": "J3-axis target position. Unit: °."
+        },
+        {
+          "name": "J4",
+          "type": "double",
+          "required": true,
+          "description": "J4-axis target position. Unit: °."
+        },
+        {
+          "name": "SpeedJ",
+          "type": "int",
+          "required": false,
+          "description": "Joint speed ratio. Range: [1, 100]."
+        },
+        {
+          "name": "AccJ",
+          "type": "int",
+          "required": false,
+          "description": "Joint acceleration ratio. Range: [1, 100]."
+        },
+        {
+          "name": "CP",
+          "type": "int",
+          "required": false,
+          "description": "Continuous path ratio. Range: [0, 100]."
+        }
+      ],
+      "return": "ErrorID,{},JointMovJ(J1,J2,J3,J4);",
+      "examples": [
+        "JointMovJ(0,0,-90,0,SpeedJ=60,AccJ=50)"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "MovLIO",
+      "port": 30003,
+      "type": "queue",
+      "syntax": "MovLIO(X, Y, Z, R, {Mode,Distance,Index,Status}, ..., User=index, Tool=index, SpeedL=R, AccL=R, CP=R)",
+      "description": "Linear motion to target Cartesian position with DO triggers at specified distances during motion.",
+      "parameters": [
+        {
+          "name": "X",
+          "type": "double",
+          "required": true,
+          "description": "X-axis target position. Unit: mm."
+        },
+        {
+          "name": "Y",
+          "type": "double",
+          "required": true,
+          "description": "Y-axis target position. Unit: mm."
+        },
+        {
+          "name": "Z",
+          "type": "double",
+          "required": true,
+          "description": "Z-axis target position. Unit: mm."
+        },
+        {
+          "name": "R",
+          "type": "double",
+          "required": true,
+          "description": "R-axis target position. Unit: °."
+        },
+        {
+          "name": "Mode",
+          "type": "int",
+          "required": true,
+          "description": "Trigger mode. 0: distance percentage, 1: distance value."
+        },
+        {
+          "name": "Distance",
+          "type": "int",
+          "required": true,
+          "description": "Positive: from start. Negative: from target. Mode 0: percentage (0,100]. Mode 1: mm."
+        },
+        {
+          "name": "Index",
+          "type": "int",
+          "required": true,
+          "description": "DO port index."
+        },
+        {
+          "name": "Status",
+          "type": "int",
+          "required": true,
+          "description": "0: no signal, 1: signal."
+        }
+      ],
+      "return": "ErrorID,{},MovLIO(X,Y,Z,R,{Mode,Distance,Index,Status},...);",
+      "examples": [
+        "MovLIO(-100,100,200,150,{0,50,1,0})"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "MovJIO",
+      "port": 30003,
+      "type": "queue",
+      "syntax": "MovJIO(X, Y, Z, R, {Mode,Distance,Index,Status}, ..., User=index, Tool=index, SpeedJ=R, AccJ=R, CP=R)",
+      "description": "Joint motion to target Cartesian position with DO triggers at specified distances during motion.",
+      "parameters": [
+        {
+          "name": "X",
+          "type": "double",
+          "required": true,
+          "description": "X-axis target position. Unit: mm."
+        },
+        {
+          "name": "Y",
+          "type": "double",
+          "required": true,
+          "description": "Y-axis target position. Unit: mm."
+        },
+        {
+          "name": "Z",
+          "type": "double",
+          "required": true,
+          "description": "Z-axis target position. Unit: mm."
+        },
+        {
+          "name": "R",
+          "type": "double",
+          "required": true,
+          "description": "R-axis target position. Unit: °."
+        },
+        {
+          "name": "Mode",
+          "type": "int",
+          "required": true,
+          "description": "Trigger mode. 0: distance percentage, 1: distance value."
+        },
+        {
+          "name": "Distance",
+          "type": "int",
+          "required": true,
+          "description": "Positive: from start. Negative: from target. Mode 0: percentage (0,100]. Mode 1: mm."
+        },
+        {
+          "name": "Index",
+          "type": "int",
+          "required": true,
+          "description": "DO port index."
+        },
+        {
+          "name": "Status",
+          "type": "int",
+          "required": true,
+          "description": "0: no signal, 1: signal."
+        }
+      ],
+      "return": "ErrorID,{},MovJIO(X,Y,Z,R,{Mode,Distance,Index,Status},...);",
+      "examples": [
+        "MovJIO(-100,100,200,150,{0,50,1,0})"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "Arc",
+      "port": 30003,
+      "type": "queue",
+      "syntax": "Arc(X1, Y1, Z1, R1, X2, Y2, Z2, R2, User=index, Tool=index, SpeedL=R, AccL=R, CP=R)",
+      "description": "Move from current position to target via arc interpolation. Current position, through point (P1), and target point (P2) define the arc. The three points must not be collinear.",
+      "parameters": [
+        {
+          "name": "X1",
+          "type": "double",
+          "required": true,
+          "description": "X of arc through point. Unit: mm."
+        },
+        {
+          "name": "Y1",
+          "type": "double",
+          "required": true,
+          "description": "Y of arc through point. Unit: mm."
+        },
+        {
+          "name": "Z1",
+          "type": "double",
+          "required": true,
+          "description": "Z of arc through point. Unit: mm."
+        },
+        {
+          "name": "R1",
+          "type": "double",
+          "required": true,
+          "description": "R of arc through point. Unit: °."
+        },
+        {
+          "name": "X2",
+          "type": "double",
+          "required": true,
+          "description": "X of target point. Unit: mm."
+        },
+        {
+          "name": "Y2",
+          "type": "double",
+          "required": true,
+          "description": "Y of target point. Unit: mm."
+        },
+        {
+          "name": "Z2",
+          "type": "double",
+          "required": true,
+          "description": "Z of target point. Unit: mm."
+        },
+        {
+          "name": "R2",
+          "type": "double",
+          "required": true,
+          "description": "R of target point. Unit: °."
+        }
+      ],
+      "return": "ErrorID,{},Arc(X1,Y1,Z1,R1,X2,Y2,Z2,R2);",
+      "examples": [
+        "Arc(-350,-200,200,150,-300,-250,200,150)"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "Circle",
+      "port": 30003,
+      "type": "queue",
+      "syntax": "Circle(count, {X1,Y1,Z1,R1}, {X2,Y2,Z2,R2})",
+      "description": "Move from current position in a full circle and return. Circle defined by current position and two specified points. Points must not be collinear, and circle must stay within robot range.",
+      "parameters": [
+        {
+          "name": "count",
+          "type": "int",
+          "required": true,
+          "description": "Number of circles to complete. Must be integer ≥ 1."
+        },
+        {
+          "name": "X1,Y1,Z1,R1",
+          "type": "double",
+          "required": true,
+          "description": "Cartesian coordinates of P1. Unit: mm/°."
+        },
+        {
+          "name": "X2,Y2,Z2,R2",
+          "type": "double",
+          "required": true,
+          "description": "Cartesian coordinates of P2. Unit: mm/°."
+        }
+      ],
+      "return": "ErrorID,{},Circle(count,{X1,Y1,Z1,R1},{X2,Y2,Z2,R2});",
+      "examples": [
+        "Circle(1,{-350,-200,200,150},{-300,-250,200,150})"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "MoveJog",
+      "port": 30003,
+      "type": "queue",
+      "syntax": "MoveJog(axisID, CoordType=typeValue, User=index, Tool=index)",
+      "description": "Continuously jog the robot arm along a specified axis. Stops when MoveJog() (empty) is sent. Supported by controller V1.5.6 and above.",
+      "parameters": [
+        {
+          "name": "axisID",
+          "type": "string",
+          "required": true,
+          "description": "Axis and direction. Options: J1+, J1-, J2+, J2-, J3+, J3-, J4+, J4-, X+, X-, Y+, Y-, Z+, Z-, R+, R-."
+        },
+        {
+          "name": "CoordType",
+          "type": "int",
+          "required": false,
+          "description": "Coordinate system for Cartesian axes. 0: user coordinate system, 1: tool coordinate system."
+        },
+        {
+          "name": "User",
+          "type": "int",
+          "required": false,
+          "description": "User coordinate system index."
+        },
+        {
+          "name": "Tool",
+          "type": "int",
+          "required": false,
+          "description": "Tool coordinate system index."
+        }
+      ],
+      "return": "ErrorID,{},MoveJog(axisID,...);",
+      "examples": [
+        "MoveJog(j2-)",
+        "MoveJog()"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "Sync",
+      "port": 30003,
+      "type": "immediate",
+      "syntax": "Sync()",
+      "description": "Block execution until all queued commands have been completed. Use before immediate commands that require all motion to be finished first.",
+      "parameters": [],
+      "return": "ErrorID,{},Sync();",
+      "examples": [
+        "MovJ(x,y,z,r)",
+        "Sync()",
+        "RobotMode()"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "RelMovJUser",
+      "port": 30003,
+      "type": "queue",
+      "syntax": "RelMovJUser(OffsetX, OffsetY, OffsetZ, OffsetR, User, SpeedJ=R, AccJ=R, Tool=index, CP=R)",
+      "description": "Relative motion along user coordinate system axes with joint motion end. Supported by controller V1.5.6 and above.",
+      "parameters": [
+        {
+          "name": "OffsetX",
+          "type": "double",
+          "required": true,
+          "description": "X-axis offset. Unit: mm."
+        },
+        {
+          "name": "OffsetY",
+          "type": "double",
+          "required": true,
+          "description": "Y-axis offset. Unit: mm."
+        },
+        {
+          "name": "OffsetZ",
+          "type": "double",
+          "required": true,
+          "description": "Z-axis offset. Unit: mm."
+        },
+        {
+          "name": "OffsetR",
+          "type": "double",
+          "required": true,
+          "description": "R-axis offset. Unit: °."
+        },
+        {
+          "name": "User",
+          "type": "int",
+          "required": true,
+          "description": "Index of calibrated user coordinate system."
+        },
+        {
+          "name": "SpeedJ",
+          "type": "int",
+          "required": false,
+          "description": "Joint speed ratio."
+        },
+        {
+          "name": "AccJ",
+          "type": "int",
+          "required": false,
+          "description": "Joint acceleration ratio."
+        },
+        {
+          "name": "Tool",
+          "type": "int",
+          "required": false,
+          "description": "Tool coordinate system index."
+        }
+      ],
+      "return": "ErrorID,{},RelMovJUser(OffsetX,OffsetY,OffsetZ,OffsetR,User,...);",
+      "examples": [
+        "RelMovJUser(10,10,10,0,0)"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "RelMovLUser",
+      "port": 30003,
+      "type": "queue",
+      "syntax": "RelMovLUser(OffsetX, OffsetY, OffsetZ, OffsetR, User, SpeedL=R, AccL=R, Tool=index, CP=R)",
+      "description": "Relative motion along user coordinate system axes with linear motion end. Supported by controller V1.5.6 and above.",
+      "parameters": [
+        {
+          "name": "OffsetX",
+          "type": "double",
+          "required": true,
+          "description": "X-axis offset. Unit: mm."
+        },
+        {
+          "name": "OffsetY",
+          "type": "double",
+          "required": true,
+          "description": "Y-axis offset. Unit: mm."
+        },
+        {
+          "name": "OffsetZ",
+          "type": "double",
+          "required": true,
+          "description": "Z-axis offset. Unit: mm."
+        },
+        {
+          "name": "OffsetR",
+          "type": "double",
+          "required": true,
+          "description": "R-axis offset. Unit: °."
+        },
+        {
+          "name": "User",
+          "type": "int",
+          "required": true,
+          "description": "Index of calibrated user coordinate system."
+        },
+        {
+          "name": "SpeedL",
+          "type": "int",
+          "required": false,
+          "description": "Linear speed ratio."
+        },
+        {
+          "name": "AccL",
+          "type": "int",
+          "required": false,
+          "description": "Linear acceleration ratio."
+        },
+        {
+          "name": "Tool",
+          "type": "int",
+          "required": false,
+          "description": "Tool coordinate system index."
+        }
+      ],
+      "return": "ErrorID,{},RelMovLUser(OffsetX,OffsetY,OffsetZ,OffsetR,User,...);",
+      "examples": [
+        "RelMovLUser(10,10,10,0,0)"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "RelJointMovJ",
+      "port": 30003,
+      "type": "queue",
+      "syntax": "RelJointMovJ(Offset1, Offset2, Offset3, Offset4, SpeedJ=R, AccJ=R, CP=R)",
+      "description": "Relative motion along each joint axis with joint motion. Supported by controller V1.5.6 and above.",
+      "parameters": [
+        {
+          "name": "Offset1",
+          "type": "double",
+          "required": true,
+          "description": "J1-axis offset. Unit: °."
+        },
+        {
+          "name": "Offset2",
+          "type": "double",
+          "required": true,
+          "description": "J2-axis offset. Unit: °."
+        },
+        {
+          "name": "Offset3",
+          "type": "double",
+          "required": true,
+          "description": "J3-axis offset. Unit: °."
+        },
+        {
+          "name": "Offset4",
+          "type": "double",
+          "required": true,
+          "description": "J4-axis offset. Unit: °."
+        },
+        {
+          "name": "SpeedJ",
+          "type": "int",
+          "required": false,
+          "description": "Joint speed ratio."
+        },
+        {
+          "name": "AccJ",
+          "type": "int",
+          "required": false,
+          "description": "Joint acceleration ratio."
+        },
+        {
+          "name": "CP",
+          "type": "int",
+          "required": false,
+          "description": "Continuous path ratio."
+        }
+      ],
+      "return": "ErrorID,{},RelJointMovJ(Offset1,Offset2,Offset3,Offset4);",
+      "examples": [
+        "RelJointMovJ(10,10,10,0)"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "MovJExt",
+      "port": 30003,
+      "type": "queue",
+      "syntax": "MovJExt(Angle|Distance, SpeedE=50, AccE=50, Sync=1)",
+      "description": "Control the sliding rail (extended axis) to move to target angle or distance.",
+      "parameters": [
+        {
+          "name": "Angle|Distance",
+          "type": "float",
+          "required": true,
+          "description": "Target angle (°) or distance (mm) depending on extended axis type."
+        },
+        {
+          "name": "SpeedE",
+          "type": "int",
+          "required": false,
+          "description": "Speed ratio. Range: 1–100. Default: 100."
+        },
+        {
+          "name": "AccE",
+          "type": "int",
+          "required": false,
+          "description": "Acceleration ratio. Range: 1–100. Default: 100."
+        },
+        {
+          "name": "Sync",
+          "type": "int",
+          "required": false,
+          "description": "0: async (return immediately). 1: sync (wait for completion). Default: 0."
+        }
+      ],
+      "return": "ErrorID,{},MovJExt(Angle|Distance,SpeedE=50,AccE=50,Sync=1);",
+      "examples": [
+        "MovJExt(300)"
+      ]
+    },
+    {
+      "section": "3.2 Motion Command",
+      "name": "SyncAll",
+      "port": 30003,
+      "type": "immediate",
+      "syntax": "SyncAll()",
+      "description": "Block execution until ALL queued commands are executed, including extended axis commands. Use instead of Sync() when extended axes are involved to guarantee both robot arm and extended axis complete their motion.",
+      "parameters": [],
+      "return": "ErrorID,{},SyncAll();",
+      "examples": [
+        "MovJ(x1,y1,z1,r1)",
+        "MovJExt(distance)",
+        "MovJ(x2,y2,z2,r2)",
+        "SyncAll()",
+        "RobotMode()"
+      ]
+    }
+  ],
+  "error_codes": {
+    "description": "ErrorID returned in every command response. Format: ErrorID,{value},CommandName(...);",
+    "codes": [
+      {
+        "code": 0,
+        "label": "No error",
+        "description": "Command delivered and received successfully."
+      },
+      {
+        "code": -1,
+        "label": "Fail to get",
+        "description": "Failed to receive or execute the command."
+      },
+      {
+        "code": -10000,
+        "label": "Command error",
+        "description": "The command does not exist."
+      },
+      {
+        "code": -20000,
+        "label": "Parameter number error",
+        "description": "The number of parameters in the command is incorrect."
+      },
+      {
+        "code": -30001,
+        "label": "Parameter type error (param 1)",
+        "description": "-30000 = parameter type error. Last digit indicates which parameter is wrong. E.g. -30001 = first parameter type is incorrect."
+      },
+      {
+        "code": -30002,
+        "label": "Parameter type error (param 2)",
+        "description": "Type of the second parameter is incorrect."
+      },
+      {
+        "code": "−3000N",
+        "label": "Parameter type error (param N)",
+        "description": "Type of the Nth parameter is incorrect."
+      },
+      {
+        "code": -40001,
+        "label": "Parameter range error (param 1)",
+        "description": "-40000 = parameter range error. Last digit indicates which parameter is out of range. E.g. -40001 = first parameter range is incorrect."
+      },
+      {
+        "code": -40002,
+        "label": "Parameter range error (param 2)",
+        "description": "Range of the second parameter is incorrect."
+      },
+      {
+        "code": "−4000N",
+        "label": "Parameter range error (param N)",
+        "description": "Range of the Nth parameter is incorrect."
+      }
+    ],
+    "notes": [
+      "Collision detection alarm value is -2 (returned inside GetErrorID).",
+      "For controller/algorithm alarms see alarm_controller.json on controller.",
+      "For servo alarms see alarm_servo.json on controller."
+    ]
+  },
+  "realtime_feedback": {
+    "description": "Ports 30004/30005/30006 push 1440-byte packets. Data is little-endian (LSB first).",
+    "packet_size_bytes": 1440,
+    "endian": "little-endian",
+    "fields": [
+      {
+        "name": "MessageSize",
+        "type": "uint16",
+        "count": 1,
+        "size": 2,
+        "byte_pos": "0000-0001",
+        "description": "Total message length in bytes."
+      },
+      {
+        "name": "Reserved",
+        "type": "uint16",
+        "count": 3,
+        "size": 6,
+        "byte_pos": "0002-0007",
+        "description": "Reserved."
+      },
+      {
+        "name": "DigitalInputs",
+        "type": "uint64",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0008-0015",
+        "description": "Current status of all digital inputs. Each bit = one port. 1=signal, 0=no signal."
+      },
+      {
+        "name": "DigitalOutputs",
+        "type": "uint64",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0016-0023",
+        "description": "Current status of all digital outputs. Each bit = one port."
+      },
+      {
+        "name": "RobotMode",
+        "type": "uint64",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0024-0031",
+        "description": "Robot mode value. See RobotMode command for value definitions."
+      },
+      {
+        "name": "TimeStamp",
+        "type": "uint64",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0032-0039",
+        "description": "Unix timestamp in milliseconds."
+      },
+      {
+        "name": "Reserved",
+        "type": "uint64",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0040-0047",
+        "description": "Reserved."
+      },
+      {
+        "name": "TestValue",
+        "type": "uint64",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0048-0055",
+        "description": "Memory structure test value. Should equal 0x0123456789ABCDEF."
+      },
+      {
+        "name": "Reserved",
+        "type": "double",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0056-0063",
+        "description": "Reserved."
+      },
+      {
+        "name": "SpeedScaling",
+        "type": "double",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0064-0071",
+        "description": "Current speed rate (global speed ratio)."
+      },
+      {
+        "name": "Reserved",
+        "type": "double",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0072-0079",
+        "description": "Reserved."
+      },
+      {
+        "name": "VMain",
+        "type": "double",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0080-0087",
+        "description": "Control board voltage."
+      },
+      {
+        "name": "VRobot",
+        "type": "double",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0088-0095",
+        "description": "Robot voltage."
+      },
+      {
+        "name": "IRobot",
+        "type": "double",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0096-0103",
+        "description": "Robot current."
+      },
+      {
+        "name": "Reserved",
+        "type": "double",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0104-0111",
+        "description": "Reserved."
+      },
+      {
+        "name": "Reserved",
+        "type": "double",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "0112-0119",
+        "description": "Reserved."
+      },
+      {
+        "name": "Reserved",
+        "type": "double",
+        "count": 3,
+        "size": 24,
+        "byte_pos": "0120-0143",
+        "description": "Reserved."
+      },
+      {
+        "name": "Reserved",
+        "type": "double",
+        "count": 3,
+        "size": 24,
+        "byte_pos": "0144-0167",
+        "description": "Reserved."
+      },
+      {
+        "name": "Reserved",
+        "type": "double",
+        "count": 3,
+        "size": 24,
+        "byte_pos": "0168-0191",
+        "description": "Reserved."
+      },
+      {
+        "name": "QTarget",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0192-0239",
+        "description": "Target joint position (6 joints, unit: °)."
+      },
+      {
+        "name": "QDTarget",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0240-0287",
+        "description": "Target joint speed."
+      },
+      {
+        "name": "QDDTarget",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0288-0335",
+        "description": "Target joint acceleration."
+      },
+      {
+        "name": "ITarget",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0336-0383",
+        "description": "Target joint current."
+      },
+      {
+        "name": "MTarget",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0384-0431",
+        "description": "Target joint torque."
+      },
+      {
+        "name": "QActual",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0432-0479",
+        "description": "Actual joint position."
+      },
+      {
+        "name": "QDActual",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0480-0527",
+        "description": "Actual joint speed."
+      },
+      {
+        "name": "IActual",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0528-0575",
+        "description": "Actual joint current."
+      },
+      {
+        "name": "ActualTCPForce",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0576-0623",
+        "description": "Reserved."
+      },
+      {
+        "name": "ToolVectorActual",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0624-0671",
+        "description": "TCP actual Cartesian coordinates [X,Y,Z,Rx,Ry,Rz]."
+      },
+      {
+        "name": "TCPSpeedActual",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0672-0719",
+        "description": "TCP actual speed in Cartesian coordinate system."
+      },
+      {
+        "name": "TCPForce",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0720-0767",
+        "description": "TCP force value (calculated from joint current)."
+      },
+      {
+        "name": "ToolVectorTarget",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0768-0815",
+        "description": "TCP target Cartesian coordinates."
+      },
+      {
+        "name": "TCPSpeedTarget",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0816-0863",
+        "description": "TCP target Cartesian speed."
+      },
+      {
+        "name": "MotorTemperatures",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0864-0911",
+        "description": "Joint motor temperatures."
+      },
+      {
+        "name": "JointModes",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0912-0959",
+        "description": "Joint control mode. 8=Position mode, 10=Torque mode."
+      },
+      {
+        "name": "VActual",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "0960-1007",
+        "description": "Joint voltage."
+      },
+      {
+        "name": "HandType",
+        "type": "char",
+        "count": 4,
+        "size": 4,
+        "byte_pos": "1008-1011",
+        "description": "Hand system (arm orientation). See SetArmOrientation."
+      },
+      {
+        "name": "User",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1012",
+        "description": "Active user coordinate system index."
+      },
+      {
+        "name": "Tool",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1013",
+        "description": "Active tool coordinate system index."
+      },
+      {
+        "name": "RunQueuedCmd",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1014",
+        "description": "Algorithm queue running signal."
+      },
+      {
+        "name": "PauseCmdFlag",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1015",
+        "description": "Algorithm queue pause signal."
+      },
+      {
+        "name": "VelocityRatio",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1016",
+        "description": "Joint speed ratio (0–100)."
+      },
+      {
+        "name": "AccelerationRatio",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1017",
+        "description": "Joint acceleration ratio (0–100)."
+      },
+      {
+        "name": "JerkRatio",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1018",
+        "description": "Joint jerk ratio (0–100)."
+      },
+      {
+        "name": "XYZVelocityRatio",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1019",
+        "description": "Cartesian position speed ratio (0–100)."
+      },
+      {
+        "name": "RVelocityRatio",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1020",
+        "description": "Cartesian posture speed ratio (0–100)."
+      },
+      {
+        "name": "XYZAccelerationRatio",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1021",
+        "description": "Cartesian position acceleration ratio (0–100)."
+      },
+      {
+        "name": "RAccelerationRatio",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1022",
+        "description": "Cartesian posture acceleration ratio (0–100)."
+      },
+      {
+        "name": "XYZJerkRatio",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1023",
+        "description": "Cartesian position jerk ratio (0–100)."
+      },
+      {
+        "name": "RJerkRatio",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1024",
+        "description": "Cartesian posture jerk ratio (0–100)."
+      },
+      {
+        "name": "BrakeStatus",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1025",
+        "description": "Robot brake status per joint (bitmask). Bit layout: [7-6=reserved, 5=J1, 4=J2, 3=J3, 2=J4, 1-0=reserved]. 1=brake on. E.g. 0x04 = J4 brake on."
+      },
+      {
+        "name": "EnableStatus",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1026",
+        "description": "Robot enabling status."
+      },
+      {
+        "name": "DragStatus",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1027",
+        "description": "Robot drag status."
+      },
+      {
+        "name": "RunningStatus",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1028",
+        "description": "Robot running status."
+      },
+      {
+        "name": "ErrorStatus",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1029",
+        "description": "Robot alarm status."
+      },
+      {
+        "name": "JogStatusCR",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1030",
+        "description": "Robot jog status."
+      },
+      {
+        "name": "RobotType",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1031",
+        "description": "Robot model. 1=MG400, 2=M1 Pro, 4=M1 Pro (with RS485)."
+      },
+      {
+        "name": "DragButtonSignal",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1032",
+        "description": "Reserved."
+      },
+      {
+        "name": "EnableButtonSignal",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1033",
+        "description": "Reserved."
+      },
+      {
+        "name": "RecordButtonSignal",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1034",
+        "description": "Reserved."
+      },
+      {
+        "name": "ReappearButtonSignal",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1035",
+        "description": "Reserved."
+      },
+      {
+        "name": "JawButtonSignal",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1036",
+        "description": "Reserved."
+      },
+      {
+        "name": "SixForceOnline",
+        "type": "char",
+        "count": 1,
+        "size": 1,
+        "byte_pos": "1037",
+        "description": "Reserved."
+      },
+      {
+        "name": "Reserved",
+        "type": "char",
+        "count": 82,
+        "size": 82,
+        "byte_pos": "1038-1119",
+        "description": "Reserved."
+      },
+      {
+        "name": "MActual[6]",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "1120-1167",
+        "description": "Actual torque of four joints."
+      },
+      {
+        "name": "Load",
+        "type": "double",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "1168-1175",
+        "description": "End load weight. Unit: kg."
+      },
+      {
+        "name": "CenterX",
+        "type": "double",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "1176-1183",
+        "description": "End load X-direction eccentric distance. Unit: mm."
+      },
+      {
+        "name": "CenterY",
+        "type": "double",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "1184-1191",
+        "description": "End load Y-direction eccentric distance. Unit: mm."
+      },
+      {
+        "name": "CenterZ",
+        "type": "double",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "1192-1199",
+        "description": "End load Z-direction eccentric distance. Unit: mm."
+      },
+      {
+        "name": "User[6]",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "1200-1247",
+        "description": "User coordinate system values."
+      },
+      {
+        "name": "Tool[6]",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "1248-1295",
+        "description": "Tool coordinate system values."
+      },
+      {
+        "name": "TraceIndex",
+        "type": "double",
+        "count": 1,
+        "size": 8,
+        "byte_pos": "1296-1303",
+        "description": "Trajectory playback running index."
+      },
+      {
+        "name": "SixForceValue[6]",
+        "type": "double",
+        "count": 6,
+        "size": 48,
+        "byte_pos": "1304-1351",
+        "description": "Reserved."
+      },
+      {
+        "name": "TargetQuaternion[4]",
+        "type": "double",
+        "count": 4,
+        "size": 32,
+        "byte_pos": "1352-1383",
+        "description": "Target quaternion [qw, qx, qy, qz]."
+      },
+      {
+        "name": "ActualQuaternion[4]",
+        "type": "double",
+        "count": 4,
+        "size": 32,
+        "byte_pos": "1384-1415",
+        "description": "Actual quaternion [qw, qx, qy, qz]."
+      },
+      {
+        "name": "Reserved",
+        "type": "char",
+        "count": 24,
+        "size": 24,
+        "byte_pos": "1416-1440",
+        "description": "Reserved."
+      }
+    ],
+    "di_do_bit_description": "DI/DO each occupies 8 bytes (64 bits). Each bit = one port status. 1=signal present, 0=no signal. First byte bits 0-7 = ports 1-8, etc.",
+    "brake_status_bits": {
+      "bit7": "Reserved",
+      "bit6": "Reserved",
+      "bit5": "J1 brake",
+      "bit4": "J2 brake",
+      "bit3": "J3 brake",
+      "bit2": "J4 brake",
+      "bit1": "Reserved",
+      "bit0": "Reserved"
+    },
+    "robot_type_values": {
+      "1": "MG400",
+      "2": "M1 Pro",
+      "4": "M1 Pro (with RS485 function)"
+    }
+  }
+}

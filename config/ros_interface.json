@@ -1,0 +1,353 @@
+{
+    "_meta": {
+        "project": "MG400 VR Teleop V2 (Combined Engine)",
+        "description": "Single source of truth สำหรับ topic/service ทั้งหมดระหว่าง Unity ↔ ROS ↔ MG400. ใช้ไฟล์นี้ตั้งค่าทั้งฝั่ง ROS node และ Unity ROS-TCP-Connector. topic ที่มี status=placeholder หมายถึงเตรียมไว้ให้ Unity รอส่ง/รับ แต่ยังไม่ได้ implement ฝั่ง Unity",
+        "ros_distro": "humble",
+        "engine": "HarvestX_MG400_ROS2 (C++ ros2_control driver)",
+        "logic": "teleop_logic (Python — M11/M14/M15/default)",
+        "bridge": "ROS-TCP-Endpoint (port 10000)",
+        "network": {
+            "ros_bridge_port": 10000,
+            "robot_ip": "192.168.1.6",
+            "dashboard_port": 29999,
+            "motion_port": 30003,
+            "feedback_port": 30004
+        },
+        "update_rate_hz": {
+            "joint_feedback": 125,
+            "status_publish": 20,
+            "tool_index_query_interval_s": 5
+        }
+    },
+
+    "topics_unity_to_ros": [
+        {
+            "topic": "/unity/joint_cmd",
+            "ros_msg_type": "sensor_msgs/JointState",
+            "status": "active",
+            "description": "คำสั่ง joint 4 แกนจาก VR controller (rad). ROS รับ → validate → ส่งผ่าน engine ไปหุ่น",
+            "fields": {
+                "header.stamp": "RosTime — timestamp จาก Unity (ใช้คำนวณ latency)",
+                "name": ["joint1", "joint2", "joint3", "joint4"],
+                "position": "float64[4] — มุม joint เป็น radian [J1, J2, J3, J4]"
+            },
+            "notes": "ต้องอยู่ใน joint limit: J1 ±160°, J2 -25~85°, J3 -25~105°, J4 ±360°"
+        },
+        {
+            "topic": "/vr/suction_cmd",
+            "ros_msg_type": "std_msgs/Bool",
+            "status": "active",
+            "description": "เปิด/ปิดหัวดูด. true = ดูด, false = ปล่อย (มี blow sequence อัตโนมัติ)",
+            "fields": {
+                "data": "bool"
+            }
+        },
+        {
+            "topic": "/mg400/light_cmd",
+            "ros_msg_type": "std_msgs/Int32MultiArray",
+            "status": "active",
+            "description": "สั่งไฟสัญญาณ [port, state]",
+            "fields": {
+                "data": "int32[2] — [do_port, 1=ON/0=OFF]"
+            },
+            "port_map": { "3": "Green", "4": "Yellow", "5": "Red" }
+        },
+        {
+            "topic": "/teleop/unity_pong",
+            "ros_msg_type": "std_msgs/String",
+            "status": "active",
+            "description": "Heartbeat echo: Unity ส่ง timestamp ที่ได้จาก /teleop/ros_ping กลับมา",
+            "fields": {
+                "data": "string — echo timestamp เช่น '1708820400123'"
+            }
+        },
+        {
+            "topic": "/unity/enable_robot",
+            "ros_msg_type": "std_msgs/Bool",
+            "status": "placeholder",
+            "description": "สั่ง Enable (true) / Disable (false) หุ่นยนต์จาก Unity UI",
+            "fields": {
+                "data": "bool"
+            },
+            "notes": "ROS จะเรียก mg400_msgs/srv/EnableRobot หรือ DisableRobot"
+        },
+        {
+            "topic": "/unity/clear_error",
+            "ros_msg_type": "std_msgs/Empty",
+            "status": "placeholder",
+            "description": "สั่ง Clear Error จาก Unity UI เมื่อหุ่นอยู่ใน Mode 9",
+            "fields": {},
+            "notes": "ROS จะเรียก mg400_msgs/srv/ClearError"
+        },
+        {
+            "topic": "/unity/speed_factor",
+            "ros_msg_type": "std_msgs/Int32",
+            "status": "placeholder",
+            "description": "ปรับ Speed Factor (0-100%) จาก Unity slider",
+            "fields": {
+                "data": "int32 — 0 ถึง 100"
+            },
+            "notes": "ROS จะเรียก mg400_msgs/srv/SpeedFactor"
+        },
+        {
+            "topic": "/unity/control_mode",
+            "ros_msg_type": "std_msgs/String",
+            "status": "placeholder",
+            "description": "เปลี่ยนโหมดควบคุม: jointmovj / movj / movl",
+            "fields": {
+                "data": "string — 'jointmovj' | 'movj' | 'movl'"
+            }
+        },
+        {
+            "topic": "/unity/logic_mode",
+            "ros_msg_type": "std_msgs/String",
+            "status": "placeholder",
+            "description": "เปลี่ยน logic mode: default / m11 / m14 / m15 / m8_raw",
+            "fields": {
+                "data": "string — 'default' | 'm11' | 'm14' | 'm15' | 'm8_raw'"
+            }
+        },
+        {
+            "topic": "/unity/tool_select",
+            "ros_msg_type": "std_msgs/Int32",
+            "status": "placeholder",
+            "description": "เลือก Tool index (0-9) จาก Unity dropdown",
+            "fields": {
+                "data": "int32 — tool index"
+            },
+            "notes": "ROS จะเรียก mg400_msgs/srv/Tool"
+        },
+        {
+            "topic": "/unity/teach_mode",
+            "ros_msg_type": "std_msgs/Bool",
+            "status": "placeholder",
+            "description": "เปิด/ปิด Drag (Teach) mode จาก Unity toggle",
+            "fields": {
+                "data": "bool — true=เปิด teach, false=ปิด"
+            }
+        },
+        {
+            "topic": "/unity/emergency_stop",
+            "ros_msg_type": "std_msgs/Bool",
+            "status": "placeholder",
+            "description": "Emergency Stop จาก Unity panic button",
+            "fields": {
+                "data": "bool — true=หยุดฉุกเฉิน"
+            },
+            "notes": "ROS จะเรียก mg400_msgs/srv/EmergencyStop"
+        }
+    ],
+
+    "topics_ros_to_unity": [
+        {
+            "topic": "/joint_states",
+            "ros_msg_type": "sensor_msgs/JointState",
+            "status": "active",
+            "description": "สถานะ joint จริงจากหุ่น (9 joints รวม passive/mimic, 125Hz)",
+            "fields": {
+                "name": ["joint1","joint2","joint2_2","joint3","joint3_2","joint4","joint4_1","joint4_2","joint4_2_end"],
+                "position": "float64[9] — radian. Active joints = index 0,1,3,8"
+            }
+        },
+        {
+            "topic": "/mg400/tool_vector_actual",
+            "ros_msg_type": "std_msgs/Float64MultiArray",
+            "status": "active",
+            "description": "ตำแหน่ง XYZ จริงจาก firmware (รวม tool offset)",
+            "fields": {
+                "data": "float64[6] — [x_mm, y_mm, z_mm, rx_deg, ry_deg, rz_deg]"
+            }
+        },
+        {
+            "topic": "/mg400/tool_vector_target",
+            "ros_msg_type": "std_msgs/Float64MultiArray",
+            "status": "active",
+            "description": "ตำแหน่ง XYZ เป้าหมายจาก firmware",
+            "fields": {
+                "data": "float64[6]"
+            }
+        },
+        {
+            "topic": "/robot/flange_actual",
+            "ros_msg_type": "std_msgs/Float64MultiArray",
+            "status": "active",
+            "description": "FK flange ไม่รวม tool offset",
+            "fields": {
+                "data": "float64[6]"
+            }
+        },
+        {
+            "topic": "/teleop/unity_xyz",
+            "ros_msg_type": "std_msgs/Float64MultiArray",
+            "status": "active",
+            "description": "FK ของ Unity joint input (ไม่รวม tool offset)",
+            "fields": {
+                "data": "float64[6]"
+            }
+        },
+        {
+            "topic": "/teleop/predicted_target",
+            "ros_msg_type": "sensor_msgs/JointState",
+            "status": "active",
+            "description": "Kalman predicted target joints",
+            "fields": {
+                "position": "float64[4] — radian"
+            }
+        },
+        {
+            "topic": "/teleop/sent_command",
+            "ros_msg_type": "sensor_msgs/JointState",
+            "status": "active",
+            "description": "คำสั่งที่ส่งจริงไปหุ่น (อัปเดตเฉพาะเมื่อส่งใหม่)",
+            "fields": {
+                "position": "float64[4] — radian"
+            }
+        },
+        {
+            "topic": "/robot/tool_index",
+            "ros_msg_type": "std_msgs/Int32",
+            "status": "active",
+            "description": "Active tool index (query ทุก 5 วินาที)",
+            "fields": {
+                "data": "int32 — 0-9"
+            }
+        },
+        {
+            "topic": "/mg400/robot_mode",
+            "ros_msg_type": "std_msgs/Int32",
+            "status": "active",
+            "description": "Robot mode (1=INIT, 2=BRAKE_OPEN, 3=POWER_OFF, 4=DISABLED, 5=ENABLED, 6=DRAG, 7=RUNNING, 8=RECORDING, 9=ERROR, 10=PAUSE, 11=JOG)",
+            "fields": {
+                "data": "int32"
+            }
+        },
+        {
+            "topic": "/mg400/error_status",
+            "ros_msg_type": "std_msgs/Int32",
+            "status": "active",
+            "description": "Error/alarm code (0 = ไม่มี error)",
+            "fields": {
+                "data": "int32"
+            }
+        },
+        {
+            "topic": "/mg400/do_status",
+            "ros_msg_type": "std_msgs/Int64",
+            "status": "active",
+            "description": "Bitmask ของ Digital Output 16 พอร์ต",
+            "fields": {
+                "data": "int64 — bit0=DO1, bit15=DO16"
+            },
+            "port_map": {
+                "DO16": "Vacuum",
+                "DO15": "Blow",
+                "DO3": "Green light",
+                "DO4": "Yellow light",
+                "DO5": "Red light"
+            }
+        },
+        {
+            "topic": "/mg400/haptic_feedback",
+            "ros_msg_type": "std_msgs/String",
+            "status": "active",
+            "description": "Haptic signal เมื่อชน ('COLLISION')",
+            "fields": {
+                "data": "string"
+            }
+        },
+        {
+            "topic": "/teleop/ros_ping",
+            "ros_msg_type": "std_msgs/Int64",
+            "status": "active",
+            "description": "Heartbeat ทุก 1 วินาที (Unix ms)",
+            "fields": {
+                "data": "int64"
+            }
+        },
+        {
+            "topic": "/teleop/debug",
+            "ros_msg_type": "std_msgs/String",
+            "status": "active",
+            "description": "Debug messages",
+            "fields": {
+                "data": "string"
+            }
+        },
+        {
+            "topic": "/teleop/latency_report",
+            "ros_msg_type": "std_msgs/String",
+            "status": "placeholder",
+            "description": "รายงาน latency แบบ JSON (e2e_ms, network_ms, decision_ms ฯลฯ)",
+            "fields": {
+                "data": "string — JSON object"
+            }
+        },
+        {
+            "topic": "/mg400/connection_status",
+            "ros_msg_type": "std_msgs/Bool",
+            "status": "placeholder",
+            "description": "สถานะเชื่อมต่อหุ่น (true=connected, false=disconnected)",
+            "fields": {
+                "data": "bool"
+            }
+        },
+        {
+            "topic": "/teleop/active_mode",
+            "ros_msg_type": "std_msgs/String",
+            "status": "placeholder",
+            "description": "โหมดที่ใช้งานอยู่ เช่น 'M15_Sharp / jointmovj'",
+            "fields": {
+                "data": "string"
+            }
+        }
+    ],
+
+    "unity_setup": {
+        "package": "ROS-TCP-Connector (Unity Asset Store)",
+        "ros_settings": {
+            "RosIPAddress": "192.168.1.x (Ubuntu VM IP)",
+            "RosPort": 10000
+        },
+        "unity_publisher_topics": [
+            "/unity/joint_cmd",
+            "/vr/suction_cmd",
+            "/mg400/light_cmd",
+            "/teleop/unity_pong",
+            "/unity/enable_robot",
+            "/unity/clear_error",
+            "/unity/speed_factor",
+            "/unity/control_mode",
+            "/unity/logic_mode",
+            "/unity/tool_select",
+            "/unity/teach_mode",
+            "/unity/emergency_stop"
+        ],
+        "unity_subscriber_topics": [
+            "/joint_states",
+            "/mg400/tool_vector_actual",
+            "/mg400/tool_vector_target",
+            "/robot/flange_actual",
+            "/teleop/unity_xyz",
+            "/teleop/predicted_target",
+            "/teleop/sent_command",
+            "/robot/tool_index",
+            "/mg400/robot_mode",
+            "/mg400/error_status",
+            "/mg400/do_status",
+            "/mg400/haptic_feedback",
+            "/teleop/ros_ping",
+            "/teleop/debug",
+            "/teleop/latency_report",
+            "/mg400/connection_status",
+            "/teleop/active_mode"
+        ]
+    },
+
+    "ros_launch": {
+        "engine": "ros2 launch mg400_bringup mg400.launch.py ip:=192.168.1.6",
+        "teleop": "ros2 run teleop_logic teleop_node",
+        "bridge": "ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0 -p ROS_TCP_PORT:=10000",
+        "mock_frontend": "python3 tools/mock_frontend.py",
+        "mock_robot": "cd tools/mock_robot && docker-compose up"
+    }
+}
