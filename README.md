@@ -8,21 +8,21 @@ Unity (Frontend/VR)
     │  ROS-TCP-Connector (port 10000)
     ▼
 ┌─────────────────────────────────────────────┐
-│  teleop_mg400_ws                             │
-│                                              │
+│  teleop_mg400_ws                            │
+│                                             │
 │  ┌──────────────┐   ┌───────────────────┐   │
-│  │ teleop_logic  │──▶│   mg400_engine    │   │
-│  │ (Python)      │   │   (C++ driver)    │   │
-│  │               │   │                   │   │
-│  │ - TeleopCtrl  │   │ - mg400_interface │   │
-│  │ - M11/M14/M15 │   │ - mg400_plugin   │   │
-│  │ - Analytics   │   │ - mg400_node     │   │
-│  │ - ClockSync   │   │ - mg400_msgs     │   │
+│  │ teleop_logic │──▶│   mg400_engine    │   │
+│  │ (Python)     │   │   (C++ driver)    │   │
+│  │              │   │                   │   │
+│  │ - TeleopCtrl │   │ - mg400_interface │   │
+│  │ - M11/M14/M15│   │ - mg400_plugin    │   │
+│  │ - Analytics  │   │ - mg400_node      │   │
+│  │ - ClockSync  │   │ - mg400_msgs      │   │
 │  └──────────────┘   └───────────────────┘   │
-│         │                     │              │
+│         │                     │             │
 │  ┌──────────────┐   ┌───────────────────┐   │
-│  │ unity_bridge  │   │ mg400_description │   │
-│  │ (ROS-TCP-EP)  │   │ (URDF/meshes)    │   │
+│  │ unity_bridge │   │ mg400_description │   │
+│  │ (ROS-TCP-EP) │   │ (URDF/meshes)     │   │
 │  └──────────────┘   └───────────────────┘   │
 └─────────────────────────────────────────────┘
     │
