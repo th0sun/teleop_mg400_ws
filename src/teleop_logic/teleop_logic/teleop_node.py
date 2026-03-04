@@ -717,39 +717,48 @@ class TeleopNode(Node):
             
             # ──────────────────────────────────────────────────────
             # 🔁 LAST-TARGET GUARANTEE
-            # If the robot has settled (low velocity) but hasn't reached
-            # the latest target, force-resend every SETTLE_RETRY_SEC.
-            # Fixes: Dobot silently ignores commands while busy → robot
-            # stops short of the final slider position.
+            # Only fires after robot has been TRULY STOPPED for a sustained
+            # period AND is still significantly off target.
+            # Conservative thresholds prevent oscillation.
             # ──────────────────────────────────────────────────────
-            SETTLE_ERROR_THRESHOLD = 0.02   # rad (~1.1°) — resend if still this far off
-            SETTLE_VELOCITY_THRESH = 0.005  # rad/s — consider robot "settled"
-            SETTLE_RETRY_SEC = 0.3          # seconds between retry attempts
+            SETTLE_ERROR_THRESHOLD = 0.052   # rad (~3°) — don't fight deceleration overshoot
+            SETTLE_VELOCITY_THRESH = 0.002   # rad/s — must be very still
+            SETTLE_RETRY_SEC = 1.2           # seconds — wait fully settled before retry
 
             velocity_mag = np.max(np.abs(self.controller.robot_velocity))
             error_to_latest = np.max(np.abs(q_current - self.latest_target))
-            time_since_retry = now - getattr(self, '_last_guarantee_time', 0.0)
+            now_t = time.time()
+
+            # Track when robot last had significant velocity (debounce)
+            if velocity_mag > SETTLE_VELOCITY_THRESH:
+                self._last_moving_time = now_t
+
+            time_since_moving   = now_t - getattr(self, '_last_moving_time', now_t)
+            time_since_retry    = now_t - getattr(self, '_last_guarantee_time', 0.0)
+
+            truly_settled = time_since_moving >= SETTLE_RETRY_SEC
 
             if (self.latest_target is not None and
-                    velocity_mag < SETTLE_VELOCITY_THRESH and
+                    truly_settled and
                     error_to_latest > SETTLE_ERROR_THRESHOLD and
                     time_since_retry >= SETTLE_RETRY_SEC):
-                
+
                 cmd_str, q_safe = self.controller.format_command_string(
                     self.latest_target, q_current=q_current, force_send=True)
-                
+
                 if cmd_str and self.sender.send(cmd_str):
-                    self._last_guarantee_time = now
+                    self._last_guarantee_time = now_t
                     self.controller.last_sent_target = q_safe
-                    self.controller.last_sent_time = now
-                    
+                    self.controller.last_sent_time = now_t
+
                     sent_msg = JointState()
                     sent_msg.header.stamp = self.get_clock().now().to_msg()
                     sent_msg.position = q_safe.tolist()
                     self.pub_sent_command.publish(sent_msg)
-                    
+
                     self.get_logger().info(
-                        f"🔁 Guarantee resend: err={np.degrees(error_to_latest):.2f}°  vel={velocity_mag:.4f} rad/s"
+                        f"🔁 Guarantee resend: err={np.degrees(error_to_latest):.2f}°  "
+                        f"settled={time_since_moving:.1f}s"
                     )
     
     def shutdown(self):
