@@ -42,7 +42,10 @@ def cdr_int32_multi_array(vals: List[int]) -> bytes:
 
 def cdr_joint_state(names: List[str], positions: List[float]) -> bytes:
     cdr = bytearray(b'\x00\x01\x00\x00')
-    cdr += struct.pack('<iI', int(time.time()), 0)
+    t = time.time()
+    sec = int(t)
+    nanosec = int((t - sec) * 1e9)
+    cdr += struct.pack('<iI', sec, nanosec)
     
     frame_id = b'sim'
     cdr += struct.pack('<I', len(frame_id) + 1) + frame_id + b'\x00'
@@ -85,6 +88,8 @@ class UnityTcpBridge:
     def start(self, host: str, port: int) -> bool:
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # Optimization: Disable Nagle's algorithm for minimal latency
+            self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             self.sock.settimeout(2.0)
             self.sock.connect((host, port))
             self.sock.settimeout(None)
@@ -134,10 +139,8 @@ class UnityTcpBridge:
 
     def publish_joint_cmd(self, joints_deg: List[float]):
         if not self.connected: return
-        print(f'[UnityTcpBridge] publish_joint_cmd called: {joints_deg}')
         joints_rad = [math.radians(j) for j in joints_deg]
         cdr = cdr_joint_state(['joint1', 'joint2', 'joint3', 'joint4'], joints_rad)
-        print(f'[UnityTcpBridge] CDR payload: {len(cdr)} bytes')
         self._send_msg('/unity/joint_cmd', cdr)
 
     def publish_dashboard_cmd(self, cmd: str):
