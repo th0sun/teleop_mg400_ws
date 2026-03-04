@@ -16,7 +16,7 @@ from PyQt5.QtGui  import QFont, QKeySequence
 from ui.robot_viewport import RobotViewport
 from ui.control_panel  import ControlPanel
 from ui.teach_panel    import TeachPanel
-from core.ros_bridge   import ROSBridge, is_ros_available
+from core.ros_bridge   import ROSBridge
 
 
 class MainWindow(QMainWindow):
@@ -238,19 +238,15 @@ class MainWindow(QMainWindow):
         else:
             self.statusBar().showMessage(f'(offline) CMD: {cmd}', 2000)
 
-    @pyqtSlot(bool)
-    def _on_ros_toggle(self, enable: bool):
+    @pyqtSlot(str, int, bool)
+    def _on_ros_toggle(self, host: str, port: int, enable: bool):
         if enable:
-            if not is_ros_available():
-                QMessageBox.warning(self, 'ROS 2 Unavailable',
-                    'rclpy not found.\nRun this simulator inside your ROS 2 workspace:\n\n'
-                    '  source install/setup.bash\n  python3 tools/mg400_simulator/main.py')
-                self._panel._ros_check.setChecked(False)
-                return
-            ok = self._ros.start()
+            self.statusBar().showMessage(f"Connecting to {host}:{port}...", 2000)
+            ok = self._ros.start(host, port)
             if not ok:
-                QMessageBox.warning(self, 'ROS 2 Error',
-                    'Failed to start ROS 2 node.\nCheck that rclpy is available.')
+                QMessageBox.warning(self, 'Connection Error',
+                    f'Failed to connect to Unity endpoint at {host}:{port}.\n'
+                    'Ensure the ROS terminal (teleop_all.launch.py) is running on the target machine.')
                 self._panel._ros_check.setChecked(False)
         else:
             self._ros.stop()

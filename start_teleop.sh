@@ -3,16 +3,20 @@
 # ==========================================
 # MG400 Teleop Manager (Tmux)
 # Matrix approach: [Robot] x [Frontend]
+# Supports macOS (Simulator-only) & Linux (Full ROS 2)
 # ==========================================
 
 SESSION_NAME="mg400_teleop"
 DEFAULT_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+OS_TYPE=$(uname -s)
 
 # Option: Cleanup
 if [ "$1" = "clean" ]; then
     echo "🧹 Cleaning up..."
     tmux kill-session -t $SESSION_NAME 2>/dev/null
-    cd tools/mock_robot/docker && docker compose down
+    if [ "$OS_TYPE" = "Linux" ]; then
+        cd tools/mock_robot/docker && docker compose down 2>/dev/null
+    fi
     echo "✅ Done."
     exit 0
 fi
@@ -21,8 +25,40 @@ clear
 echo "=========================================="
 echo " 🤖 MG400 Teleop Manager "
 echo "=========================================="
+echo "OS detected: $OS_TYPE"
+
+# ==========================================
+# macOS Mode: Simulator Only (Unity Mock)
+# ==========================================
+if [ "$OS_TYPE" = "Darwin" ]; then
+    echo ""
+    echo "⚠️  macOS detected — ROS 2 is not available locally."
+    echo "The Python 3-D Simulator will connect to your Ubuntu"
+    echo "machine via Unity Mock TCP (port 10000)."
+    echo ""
+    echo "Make sure the Ubuntu machine is running:"
+    echo "  ./start_teleop.sh   (select Frontend: Simulator or Unity)"
+    echo "------------------------------------------"
+    read -p "Launch Simulator now? (Y/n): " LAUNCH_SIM
+
+    if [[ "$LAUNCH_SIM" =~ ^[Nn]$ ]]; then
+        echo "Exiting."
+        exit 0
+    fi
+
+    echo "🚀 Launching MG400 Simulator (Unity Mock mode)..."
+    cd tools/mg400_simulator
+    chmod +x run.sh
+    ./run.sh
+    exit 0
+fi
+
+# ==========================================
+# Linux Mode: Full ROS 2 Stack
+# ==========================================
 echo "ROS_DOMAIN_ID (DDS domain): $DEFAULT_DOMAIN_ID"
 echo "(set ROS_DOMAIN_ID before running to override)"
+echo ""
 echo "[ STEP 1: Select Robot Backend ]"
 echo "1. Real MG400 Robot"
 echo "2. Mock Robot (Docker)"
@@ -36,7 +72,7 @@ fi
 
 echo ""
 echo "[ STEP 2: Select Frontend ]"
-echo "1. Python 3-D Simulator (PyQt5)"
+echo "1. Python 3-D Simulator (Unity Mock via ros_tcp_endpoint)"
 echo "2. Unity App (Real VR/AR headset via ros_tcp_endpoint)"
 echo "3. CLI Mock Frontend (Text-based debug)"
 echo "4. None (Headless ROS 2 Node only)"
@@ -87,27 +123,50 @@ echo "🚀 Starting ROS 2 systems in Tmux..."
 # Create new tmux session in detached mode
 tmux new-session -d -s $SESSION_NAME
 
-# Pane 0: Teleop Node (ROS 2 Core)
+# Pane 0: Teleop Node (ROS 2 Core) — always runs
 tmux send-keys -t $SESSION_NAME:0.0 "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID && source install/setup.bash && export ROBOT_IP=$ROBOT_IP && ros2 run teleop_logic teleop_node; exec bash" C-m
 
 # ==========================================
 # 2. Setup Frontend
 # ==========================================
 
-# If not 'None', split the window
-if [ "$FRONTEND_CHOICE" != "4" ]; then
+if [ "$FRONTEND_CHOICE" = "1" ]; then
+    # ── Python 3-D Simulator (needs ros_tcp_endpoint + local simulator) ──
+    # Pane 1: ros_tcp_endpoint (bridge for Unity Mock protocol)
     tmux split-window -h -t $SESSION_NAME:0
-    
-    if [ "$FRONTEND_CHOICE" = "1" ]; then
-        # Python 3-D Simulator
-        tmux send-keys -t $SESSION_NAME:0.1 "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID && source install/setup.bash && cd tools/mg400_simulator && chmod +x run.sh && ./run.sh; exec bash" C-m
-    elif [ "$FRONTEND_CHOICE" = "2" ]; then
-        # Unity TCP Endpoint
-        tmux send-keys -t $SESSION_NAME:0.1 "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID && source install/setup.bash && ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0 -p ROS_TCP_PORT:=10000; exec bash" C-m
-    elif [ "$FRONTEND_CHOICE" = "3" ]; then
-        # CLI Mock Frontend
-        tmux send-keys -t $SESSION_NAME:0.1 "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID && source install/setup.bash && ros2 run teleop_logic mock_frontend; exec bash" C-m
-    fi
+    tmux send-keys -t $SESSION_NAME:0.1 "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID && source install/setup.bash && ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0 -p ROS_TCP_PORT:=10000; exec bash" C-m
+
+    # Pane 2: Simulator GUI
+    tmux split-window -v -t $SESSION_NAME:0.1
+    tmux send-keys -t $SESSION_NAME:0.2 "cd tools/mg400_simulator && chmod +x run.sh && ./run.sh; exec bash" C-m
+
+    tmux select-pane -t $SESSION_NAME:0.0 -T "🤖 Teleop Node"
+    tmux select-pane -t $SESSION_NAME:0.1 -T "🌐 TCP Endpoint (10000)"
+    tmux select-pane -t $SESSION_NAME:0.2 -T "🖥️ Simulator"
+
+elif [ "$FRONTEND_CHOICE" = "2" ]; then
+    # ── Unity App (needs ros_tcp_endpoint only, Unity runs on separate device) ──
+    tmux split-window -h -t $SESSION_NAME:0
+    tmux send-keys -t $SESSION_NAME:0.1 "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID && source install/setup.bash && ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0 -p ROS_TCP_PORT:=10000; exec bash" C-m
+
+    tmux select-pane -t $SESSION_NAME:0.0 -T "🤖 Teleop Node"
+    tmux select-pane -t $SESSION_NAME:0.1 -T "🌐 TCP Endpoint (10000)"
+
+    echo ""
+    echo "📱 Unity App mode: ros_tcp_endpoint is listening on port 10000."
+    echo "   Connect your Unity VR/AR headset or macOS Simulator to this machine's IP."
+
+elif [ "$FRONTEND_CHOICE" = "3" ]; then
+    # ── CLI Mock Frontend (pure ROS 2, no TCP endpoint needed) ──
+    tmux split-window -h -t $SESSION_NAME:0
+    tmux send-keys -t $SESSION_NAME:0.1 "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID && source install/setup.bash && ros2 run teleop_logic mock_frontend; exec bash" C-m
+
+    tmux select-pane -t $SESSION_NAME:0.0 -T "🤖 Teleop Node"
+    tmux select-pane -t $SESSION_NAME:0.1 -T "📟 CLI Frontend"
+
+elif [ "$FRONTEND_CHOICE" = "4" ]; then
+    # ── Headless (no frontend) ──
+    tmux select-pane -t $SESSION_NAME:0.0 -T "🤖 Teleop Node (Headless)"
 fi
 
 # ==========================================
@@ -116,11 +175,6 @@ fi
 tmux set -g mouse on
 tmux set -g pane-border-status top
 tmux set -g pane-border-format " #{pane_index}: #{pane_title} "
-
-tmux select-pane -t $SESSION_NAME:0.0 -T "🤖 Teleop Node"
-if [ "$FRONTEND_CHOICE" != "4" ]; then
-    tmux select-pane -t $SESSION_NAME:0.1 -T "🖥️ Frontend"
-fi
 
 tmux set -g status-right " 💡 Ctrl+C=stop | ↑Enter=restart | Shift+drag=copy | Ctrl+D=close pane | kill-server=exit all "
 tmux set -g status-right-length 90
@@ -135,9 +189,9 @@ tmux attach-session -t $SESSION_NAME
 # ==========================================
 if [ "$ROBOT_CHOICE" = "2" ]; then
     echo ""
-    read -p "� Stop Docker Mock? (y/N): " STOP_DOCKER
+    read -p "🐳 Stop Docker Mock? (y/N): " STOP_DOCKER
     if [[ "$STOP_DOCKER" =~ ^[Yy]$ ]]; then
-        cd tools/mock_robot && docker compose down
+        cd tools/mock_robot/docker && docker compose down
         echo "🐳 Docker stopped."
     fi
 fi

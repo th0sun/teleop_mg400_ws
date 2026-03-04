@@ -9,6 +9,8 @@ import json
 import threading
 from typing import Optional, Callable, List
 
+from core.unity_tcp_bridge import UnityTcpBridge
+
 try:
     import rclpy
     from rclpy.node import Node
@@ -40,13 +42,25 @@ class ROSBridge:
 
         self._node: Optional['_SimNode'] = None
         self._thread: Optional[threading.Thread] = None
+        
+        self._tcp_bridge: Optional[UnityTcpBridge] = None
         self.connected = False
 
     # ── Public API ───────────────────────────────────────────────────────────
 
-    def start(self) -> bool:
+    def start(self, host: str = '127.0.0.1', port: int = 10000) -> bool:
         if not _ROS_AVAILABLE:
-            return False
+            print("[ROSBridge] rclpy not found. Falling back to UnityTcpBridge mockup for macOS/Windows clients.")
+            self._tcp_bridge = UnityTcpBridge(
+                on_joint_update=self.on_joint_update,
+                on_status_update=self.on_status_update,
+                on_connection_change=self.on_connection_change
+            )
+            success = self._tcp_bridge.start(host, port)
+            if success:
+                self.connected = True
+            return success
+            
         try:
             if not rclpy.ok():
                 rclpy.init(args=None)
@@ -66,6 +80,12 @@ class ROSBridge:
             return False
 
     def stop(self):
+        if self._tcp_bridge:
+            self._tcp_bridge.stop()
+            self._tcp_bridge = None
+            self.connected = False
+            return
+            
         if self._node:
             try:
                 self._node.destroy_node()
@@ -82,6 +102,10 @@ class ROSBridge:
 
     def publish_joint_cmd(self, joints_deg: List[float]):
         """Publish joint command to /unity/joint_cmd (degrees)."""
+        if self._tcp_bridge:
+            self._tcp_bridge.publish_joint_cmd(joints_deg)
+            return
+            
         if not self.connected or self._node is None:
             return
         msg = Float64MultiArray()
@@ -90,6 +114,10 @@ class ROSBridge:
 
     def publish_dashboard_cmd(self, cmd: str):
         """Publish a raw dashboard command string, e.g. 'EnableRobot()'."""
+        if self._tcp_bridge:
+            self._tcp_bridge.publish_dashboard_cmd(cmd)
+            return
+            
         if not self.connected or self._node is None:
             return
         msg = String()
@@ -98,6 +126,10 @@ class ROSBridge:
 
     def publish_control_mode(self, mode: str):
         """Publish control-mode selection, e.g. 'jointmovj'."""
+        if self._tcp_bridge:
+            self._tcp_bridge.publish_control_mode(mode)
+            return
+            
         if not self.connected or self._node is None:
             return
         msg = String()
@@ -106,6 +138,10 @@ class ROSBridge:
 
     def publish_speed(self, speed_pct: int):
         """Publish speed percentage (0-100)."""
+        if self._tcp_bridge:
+            self._tcp_bridge.publish_speed(speed_pct)
+            return
+            
         if not self.connected or self._node is None:
             return
         msg = String()
@@ -114,6 +150,10 @@ class ROSBridge:
 
     def publish_suction(self, enable: bool):
         """Toggle suction gripper."""
+        if self._tcp_bridge:
+            self._tcp_bridge.publish_suction(enable)
+            return
+            
         if not self.connected or self._node is None:
             return
         msg = String()

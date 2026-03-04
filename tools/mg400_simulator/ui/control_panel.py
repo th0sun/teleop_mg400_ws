@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel,
     QSlider, QDoubleSpinBox, QPushButton, QComboBox,
     QSpinBox, QCheckBox, QFrame, QSizePolicy, QGridLayout,
-    QScrollArea
+    QScrollArea, QLineEdit
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui  import QFont, QColor, QPalette
@@ -121,7 +121,7 @@ class ControlPanel(QWidget):
         speed_changed(int)              – 0-100
         suction_toggled(bool)
         control_mode_changed(str)
-        ros_connect_requested(bool)
+        ros_connect_requested(str, int, bool)
     """
 
     joints_changed         = pyqtSignal(list)
@@ -130,7 +130,7 @@ class ControlPanel(QWidget):
     speed_changed          = pyqtSignal(int)
     suction_toggled        = pyqtSignal(bool)
     control_mode_changed   = pyqtSignal(str)
-    ros_connect_requested  = pyqtSignal(bool)
+    ros_connect_requested  = pyqtSignal(str, int, bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -339,13 +339,25 @@ class ControlPanel(QWidget):
         self._layout.addWidget(box)
 
     def _build_ros_section(self):
-        box = QGroupBox('ROS 2 Bridge')
+        box = QGroupBox('ROS 2 Bridge / Unity Mock')
         v   = QVBoxLayout(box)
         v.setSpacing(4)
+        
+        h = QHBoxLayout()
+        h.addWidget(_label('Host:'))
+        self._ros_host = QLineEdit('192.168.1.6')
+        h.addWidget(self._ros_host)
+        
+        h.addWidget(_label('Port:'))
+        self._ros_port = QSpinBox()
+        self._ros_port.setRange(1, 65535)
+        self._ros_port.setValue(10000)
+        h.addWidget(self._ros_port)
+        v.addLayout(h)
 
-        self._ros_check = QCheckBox('Connect to ROS 2')
+        self._ros_check = QCheckBox('Connect')
         self._ros_check.toggled.connect(
-            lambda on: self.ros_connect_requested.emit(on))
+            lambda on: self.ros_connect_requested.emit(self._ros_host.text(), self._ros_port.value(), on))
         v.addWidget(self._ros_check)
 
         self._ros_status_lbl = _label('Not connected', size=8)
