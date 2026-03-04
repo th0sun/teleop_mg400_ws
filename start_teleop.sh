@@ -56,13 +56,19 @@ if [ "$ROBOT_CHOICE" = "1" ]; then
     export ROBOT_IP="192.168.1.6" # Change this if your real robot IP is different
 elif [ "$ROBOT_CHOICE" = "2" ]; then
     echo "🐳 Starting Docker Mock..."
-    cd tools/mock_robot/docker
+    pushd tools/mock_robot/docker >/dev/null
     docker compose up -d
-    cd ../../../
-    
+    MOCK_CONTAINER=$(docker compose ps -q dobot)
+    popd >/dev/null
+
+    if [ -z "$MOCK_CONTAINER" ]; then
+        echo "❌ Could not find mock robot container (dobot)."
+        exit 1
+    fi
+
     # Give it a second to start, then inspect IP
     sleep 2
-    MOCK_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' dobot 2>/dev/null)
+    MOCK_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$MOCK_CONTAINER" 2>/dev/null)
     
     if [ -z "$MOCK_IP" ]; then
         echo "❌ Could not find Mock Robot IP. Ensure Docker is running."
