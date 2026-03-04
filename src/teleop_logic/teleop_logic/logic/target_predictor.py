@@ -159,15 +159,4 @@ class TargetPredictor:
         # --- Project ahead by final_horizon ---
         future_q = self.x[:, 0, 0] + velocities * final_horizon
 
-        # --- SAFETY 3: Never predict past the raw target (anti-overshoot guard) ---
-        # Clamp each joint so predicted doesn't go beyond what the hand is pointing at
-        # relative to the filter's current estimate.
-        # (i.e., if hand is moving right and predicted > raw → cap at raw)
-        for i in range(4):
-            vel = velocities[i]
-            if vel > 0:
-                future_q[i] = min(future_q[i], raw_target_q[i])
-            elif vel < 0:
-                future_q[i] = max(future_q[i], raw_target_q[i])
-
         return future_q
