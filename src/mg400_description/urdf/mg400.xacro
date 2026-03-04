@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
-  <!-- constants -->
   <xacro:include
       filename="$(find mg400_description)/urdf/common/constants.xacro"
       ns="const" />
 
-  <!-- Base path for meshes -->
   <xacro:property
       name="BASE_PATH"
       value="mg400_description/meshes" />
@@ -52,7 +50,7 @@
     <material name="${prefix}mg400_workspace_material">
       <color rgba="0.2 0.0 0.0 0.5" />
     </material>
-    <!-- links -->
+
     <link name="${prefix}mg400_base_link">
       <inertial>
         <origin
@@ -85,6 +83,7 @@
       </collision>
     </link>
     <link name="${prefix}mg400_origin_link" />
+
     <link name="${prefix}mg400_link1">
       <inertial>
         <origin
@@ -116,6 +115,7 @@
         </geometry>
       </collision>
     </link>
+
     <link name="${prefix}mg400_link2_1">
       <inertial>
         <origin
@@ -147,6 +147,7 @@
         </geometry>
       </collision>
     </link>
+
     <link name="${prefix}mg400_link2_2">
       <inertial>
         <origin
@@ -178,6 +179,7 @@
         </geometry>
       </collision>
     </link>
+
     <link name="${prefix}mg400_link3_1">
       <inertial>
         <origin
@@ -209,6 +211,7 @@
         </geometry>
       </collision>
     </link>
+
     <link name="${prefix}mg400_link3_2">
       <inertial>
         <origin
@@ -240,6 +243,7 @@
         </geometry>
       </collision>
     </link>
+
     <link name="${prefix}mg400_link4_1">
       <inertial>
         <origin
@@ -271,6 +275,7 @@
         </geometry>
       </collision>
     </link>
+
     <link name="${prefix}mg400_link4_2">
       <inertial>
         <origin
@@ -302,6 +307,15 @@
         </geometry>
       </collision>
     </link>
+
+    <link name="${prefix}fake_link">
+       <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <mass value="0.001" />
+        <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001" />
+      </inertial>
+    </link>
+
     <link name="${prefix}mg400_link4_3">
       <inertial>
         <origin
@@ -409,7 +423,6 @@
       </link>
     </xacro:if>
 
-    <!-- joints -->
     <joint
         name="${prefix}mg400_base_joint"
         type="fixed">
@@ -468,6 +481,7 @@
           effort="0"
           velocity="0" />
     </joint>
+    
     <joint
         name="${prefix}mg400_j2_2"
         type="revolute">
@@ -482,26 +496,9 @@
           upper="3.14"
           effort="0"
           velocity="0" />
-      <!-- Passive: mirrors j2_1 to form the parallel 4-bar linkage -->
-      <mimic joint="${prefix}mg400_j2_1" multiplier="1" offset="0" />
+      <mimic joint="${prefix}mg400_j2_1" />
     </joint>
-    <joint
-        name="${prefix}mg400_j3_1"
-        type="revolute">
-      <origin
-          xyz="-0.0010512570171516 0.0357748756218898 0.175001164344716"
-          rpy="0 0 0" />
-      <parent link="${prefix}mg400_link2_1" />
-      <child link="${prefix}mg400_link3_1" />
-      <axis xyz="0 1 0" />
-      <limit
-          lower="-3.14"
-          upper="3.14"
-          effort="0"
-          velocity="0" />
-      <!-- Passive: negative of j2_1 to keep bottom rods parallel -->
-      <mimic joint="${prefix}mg400_j2_1" multiplier="-1" offset="0" />
-    </joint>
+
     <joint
         name="${prefix}mg400_j3_2"
         type="revolute">
@@ -516,26 +513,42 @@
           upper="3.14"
           effort="0"
           velocity="0" />
-      <!-- Passive: negative of j2_1 (via j2_2 mirror) -->
-      <mimic joint="${prefix}mg400_j2_1" multiplier="-1" offset="0" />
+      <mimic joint="${prefix}mg400_j2_2" multiplier="-1" />
     </joint>
+
     <joint
-        name="${prefix}mg400_j4_1"
+        name="${prefix}mg400_j3"
         type="revolute">
       <origin
-          xyz="0.175 -0.017 0.00325"
+          xyz="-0.0010512570171516 0.0357748756218898 0.175001164344716"
           rpy="0 0 0" />
-      <parent link="${prefix}mg400_link3_1" />
-      <child link="${prefix}mg400_link4_1" />
+      <parent link="${prefix}mg400_link2_1" />
+      <child link="${prefix}fake_link" />
       <axis xyz="0 1 0" />
       <limit
           lower="-3.14"
           upper="3.14"
           effort="0"
           velocity="0" />
-      <!-- Passive: negative of j3 to enforce end-effector perpendicularity -->
-      <mimic joint="${prefix}mg400_j3" multiplier="-1" offset="0" />
     </joint>
+
+    <joint
+        name="${prefix}mg400_j3_1"
+        type="revolute">
+      <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+      <parent link="${prefix}fake_link" />
+      <child link="${prefix}mg400_link3_1" />
+      <axis xyz="0 1 0" />
+      <limit
+          lower="-3.14"
+          upper="3.14"
+          effort="0"
+          velocity="0" />
+      <mimic joint="${prefix}mg400_j3_2" />
+    </joint>
+
     <joint
         name="${prefix}mg400_j4_2"
         type="revolute">
@@ -550,9 +563,26 @@
           upper="3.14"
           effort="0"
           velocity="0" />
-      <!-- Passive: mirrors j3 -->
-      <mimic joint="${prefix}mg400_j3" multiplier="1" offset="0" />
+      <mimic joint="${prefix}mg400_j3" />
     </joint>
+
+    <joint
+        name="${prefix}mg400_j4_1"
+        type="revolute">
+      <origin
+          xyz="0.175 -0.017 0.00325"
+          rpy="0 0 0" />
+      <parent link="${prefix}mg400_link3_1" />
+      <child link="${prefix}mg400_link4_1" />
+      <axis xyz="0 1 0" />
+      <limit
+          lower="-3.14"
+          upper="3.14"
+          effort="0"
+          velocity="0" />
+      <mimic joint="${prefix}mg400_j4_2" multiplier="-1" />
+    </joint>
+
     <joint
         name="${prefix}mg400_j4_3"
         type="fixed">

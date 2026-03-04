@@ -670,7 +670,7 @@ class TeleopNode(Node):
                 decision_delay_ms = (t3_cmd_send - self.target_recv_time) * 1000
                 
                 # 3. Send to Robot
-                if self.sender.send(cmd_str):
+                if self.sender.send_command_with_sync(cmd_str):
                     # Start Tracking (T1-T3)
                     self.latency_analyzer.start_tracking(
                         self.unity_send_time,
@@ -746,7 +746,7 @@ class TeleopNode(Node):
                 cmd_str, q_safe = self.controller.format_command_string(
                     self.latest_target, q_current=q_current, force_send=True)
 
-                if cmd_str and self.sender.send(cmd_str):
+                if cmd_str and self.sender.send_command_with_sync(cmd_str):
                     self._last_guarantee_time = now_t
                     self.controller.last_sent_target = q_safe
                     self.controller.last_sent_time = now_t
