@@ -629,7 +629,7 @@ class TeleopNode(Node):
                 )
                 if should_send and cmd_str:
                     t3_cmd_send = time.time()
-                    if self.sender.send(cmd_str):
+                    if self.sender.send_command_with_sync(cmd_str):
                         self.latency_analyzer.start_tracking(
                             self.unity_send_time, self.target_recv_time,
                             t3_cmd_send, q_safe, current_q=q_current
