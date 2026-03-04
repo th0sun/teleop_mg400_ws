@@ -647,28 +647,31 @@ class TeleopNode(Node):
                 return  # ← Skip default logic entirely when in experimental mode
             
             # ──────────────────────────────────────────────────────
-            # DIRECT PASSTHROUGH (no proximity/stuck gating)
-            # Send immediately whenever the target changes.
+            # DEFAULT PRODUCTION LOGIC (unchanged)
             # ──────────────────────────────────────────────────────
-            target_changed = (
-                self.latest_target is not None and
-                np.max(np.abs(self.latest_target - self.current_cmd_target)) > motion_config.TARGET_CHANGE_THRESHOLD
+            
+            should_send, send_reason = self.controller.should_send_command(
+                self.latest_target, 
+                q_current
             )
             
-            if target_changed:
-                # Format command directly from latest_target
+            if should_send:
+                # 1. Format Command
+                # force_send=True when stuck: bypass should_skip_motion which silently drops commands
+                is_stuck_recovery = send_reason.startswith("Stuck")
                 cmd_str, q_safe = self.controller.format_command_string(
-                    self.latest_target, q_current=q_current, force_send=True)
+                    self.latest_target, q_current=q_current, force_send=is_stuck_recovery)
                 
                 if not cmd_str:
                     return
-                
+
+                # 2. Timing Stats
                 t3_cmd_send = time.time()
+                decision_delay_ms = (t3_cmd_send - self.target_recv_time) * 1000
                 
+                # 3. Send to Robot
                 if self.sender.send(cmd_str):
-                    self.current_cmd_target = q_safe.copy()
-                    
-                    # Start latency tracking
+                    # Start Tracking (T1-T3)
                     self.latency_analyzer.start_tracking(
                         self.unity_send_time,
                         self.target_recv_time,
@@ -676,6 +679,23 @@ class TeleopNode(Node):
                         q_safe,
                         current_q=q_current
                     )
+                                    
+                    # File Log (CSV)
+                    dist_to_last = np.max(np.abs(q_current - q_safe))
+                    time_since_last = t3_cmd_send - self.controller.last_sent_time
+                    velocity_mag = np.max(self.controller.robot_velocity)
+                    
+                    robot_status = self.feedback.get_error_status()
+                    
+                    # CLI Report
+                    msg = self.latency_analyzer.format_sent_report(
+                        should_send, send_reason, q_current, self.latest_target, 
+                        self.controller.last_sent_target, self.controller.last_sent_time,
+                        self.controller.robot_velocity,
+                        robot_mode=robot_status['robot_mode'],
+                        error_status=robot_status['error_status']
+                    )
+                    self.get_logger().info(msg)
                     
                     # 📊 Publish Sent Command for GUI graph
                     sent_msg = JointState()
@@ -683,9 +703,54 @@ class TeleopNode(Node):
                     sent_msg.position = q_safe.tolist()
                     self.pub_sent_command.publish(sent_msg)
                     
-                    # Update controller state for monitoring tools
+                    # Update State in Controller
                     self.controller.last_sent_target = q_safe
                     self.controller.last_sent_time = t3_cmd_send
+                    
+                    self.log_queue.put(('TELEOP_PERF', [
+                        now, self.unity_send_time, self.target_recv_time, t3_cmd_send,
+                        0.0, 0.0, # Network delay calculated in analyzer report
+                        q_current, self.latest_target,
+                        dist_to_last, send_reason,
+                        time_since_last, velocity_mag, self.controller.robot_velocity
+                    ]))
+            
+            # ──────────────────────────────────────────────────────
+            # 🔁 LAST-TARGET GUARANTEE
+            # If the robot has settled (low velocity) but hasn't reached
+            # the latest target, force-resend every SETTLE_RETRY_SEC.
+            # Fixes: Dobot silently ignores commands while busy → robot
+            # stops short of the final slider position.
+            # ──────────────────────────────────────────────────────
+            SETTLE_ERROR_THRESHOLD = 0.02   # rad (~1.1°) — resend if still this far off
+            SETTLE_VELOCITY_THRESH = 0.005  # rad/s — consider robot "settled"
+            SETTLE_RETRY_SEC = 0.3          # seconds between retry attempts
+
+            velocity_mag = np.max(np.abs(self.controller.robot_velocity))
+            error_to_latest = np.max(np.abs(q_current - self.latest_target))
+            time_since_retry = now - getattr(self, '_last_guarantee_time', 0.0)
+
+            if (self.latest_target is not None and
+                    velocity_mag < SETTLE_VELOCITY_THRESH and
+                    error_to_latest > SETTLE_ERROR_THRESHOLD and
+                    time_since_retry >= SETTLE_RETRY_SEC):
+                
+                cmd_str, q_safe = self.controller.format_command_string(
+                    self.latest_target, q_current=q_current, force_send=True)
+                
+                if cmd_str and self.sender.send(cmd_str):
+                    self._last_guarantee_time = now
+                    self.controller.last_sent_target = q_safe
+                    self.controller.last_sent_time = now
+                    
+                    sent_msg = JointState()
+                    sent_msg.header.stamp = self.get_clock().now().to_msg()
+                    sent_msg.position = q_safe.tolist()
+                    self.pub_sent_command.publish(sent_msg)
+                    
+                    self.get_logger().info(
+                        f"🔁 Guarantee resend: err={np.degrees(error_to_latest):.2f}°  vel={velocity_mag:.4f} rad/s"
+                    )
     
     def shutdown(self):
         """ปิดทุกอย่างอย่างเรียบร้อย"""
