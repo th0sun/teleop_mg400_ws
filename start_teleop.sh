@@ -177,12 +177,18 @@ echo "[ STEP 3: RViz2 Robot Visualizer ]"
 read -p "Launch RViz2? (y/N): " RVIZ_CHOICE
 
 if [[ "$RVIZ_CHOICE" =~ ^[Yy]$ ]]; then
+    # display.launch.py includes:
+    #   - rsp.launch.py → robot_state_publisher (TF + /robot_description from URDF)
+    #   - joint_state_publisher_gui  (for manual testing without live /joint_states)
+    #   - rviz.launch.py → rviz2 with display.rviz config
+    # NOTE: When teleop_node is running, /joint_states is published by FeedbackHandler.
+    # joint_state_publisher_gui will be overridden by live data automatically.
     tmux split-window -v -t $SESSION_NAME:0.0
     RVIZ_PANE=$(tmux display-message -p -t $SESSION_NAME "#{pane_index}")
     tmux send-keys -t $SESSION_NAME:0.$RVIZ_PANE \
-        "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID && source install/setup.bash && ros2 launch mg400_bringup rviz.launch.py; exec bash" C-m
-    tmux select-pane -t $SESSION_NAME:0.$RVIZ_PANE -T "📡 RViz2"
-    echo "✅ RViz2 launching..."
+        "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID && source install/setup.bash && ros2 launch mg400_bringup display.launch.py; exec bash" C-m
+    tmux select-pane -t $SESSION_NAME:0.$RVIZ_PANE -T "📡 RViz2 + RSP"
+    echo "✅ RViz2 + robot_state_publisher launching..."
 fi
 
 # ==========================================
