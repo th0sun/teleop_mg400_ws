@@ -46,15 +46,17 @@ class RosPublisher(RosSender):
         deserializes it into it's message class, and publishes the message to ROS topic.
 
         Args:
-            data: The already serialized message_class data coming from outside of ROS
+            data: The already CDR-serialized message_class data coming from outside of ROS
 
         Returns:
             None: Explicitly return None so behaviour can be
         """
-        # message_type = type(self.msg)
-        # message = deserialize_message(data, message_type)
-
-        self.pub.publish(data)
+        try:
+            message_type = type(self.msg)
+            message = deserialize_message(data, message_type)
+            self.pub.publish(message)
+        except Exception as e:
+            self.get_logger().error(f'Failed to deserialize/publish message: {e}')
 
         return None
 
