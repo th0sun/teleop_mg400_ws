@@ -629,7 +629,7 @@ class TeleopNode(Node):
                 )
                 if should_send and cmd_str:
                     t3_cmd_send = time.time()
-                    if self.sender.send_command_with_sync(cmd_str):
+                    if self.sender.send(cmd_str):
                         self.latency_analyzer.start_tracking(
                             self.unity_send_time, self.target_recv_time,
                             t3_cmd_send, q_safe, current_q=q_current
@@ -670,7 +670,7 @@ class TeleopNode(Node):
                 decision_delay_ms = (t3_cmd_send - self.target_recv_time) * 1000
                 
                 # 3. Send to Robot
-                if self.sender.send_command_with_sync(cmd_str):
+                if self.sender.send(cmd_str):
                     # Start Tracking (T1-T3)
                     self.latency_analyzer.start_tracking(
                         self.unity_send_time,
@@ -714,52 +714,6 @@ class TeleopNode(Node):
                         dist_to_last, send_reason,
                         time_since_last, velocity_mag, self.controller.robot_velocity
                     ]))
-            
-            # ──────────────────────────────────────────────────────
-            # 🔁 LAST-TARGET GUARANTEE
-            # Only fires after robot has been TRULY STOPPED for a sustained
-            # period AND is still significantly off target.
-            # Conservative thresholds prevent oscillation.
-            # ──────────────────────────────────────────────────────
-            SETTLE_ERROR_THRESHOLD = 0.052   # rad (~3°) — don't fight deceleration overshoot
-            SETTLE_VELOCITY_THRESH = 0.002   # rad/s — must be very still
-            SETTLE_RETRY_SEC = 1.2           # seconds — wait fully settled before retry
-
-            velocity_mag = np.max(np.abs(self.controller.robot_velocity))
-            error_to_latest = np.max(np.abs(q_current - self.latest_target))
-            now_t = time.time()
-
-            # Track when robot last had significant velocity (debounce)
-            if velocity_mag > SETTLE_VELOCITY_THRESH:
-                self._last_moving_time = now_t
-
-            time_since_moving   = now_t - getattr(self, '_last_moving_time', now_t)
-            time_since_retry    = now_t - getattr(self, '_last_guarantee_time', 0.0)
-
-            truly_settled = time_since_moving >= SETTLE_RETRY_SEC
-
-            if (self.latest_target is not None and
-                    truly_settled and
-                    error_to_latest > SETTLE_ERROR_THRESHOLD and
-                    time_since_retry >= SETTLE_RETRY_SEC):
-
-                cmd_str, q_safe = self.controller.format_command_string(
-                    self.latest_target, q_current=q_current, force_send=True)
-
-                if cmd_str and self.sender.send_command_with_sync(cmd_str):
-                    self._last_guarantee_time = now_t
-                    self.controller.last_sent_target = q_safe
-                    self.controller.last_sent_time = now_t
-
-                    sent_msg = JointState()
-                    sent_msg.header.stamp = self.get_clock().now().to_msg()
-                    sent_msg.position = q_safe.tolist()
-                    self.pub_sent_command.publish(sent_msg)
-
-                    self.get_logger().info(
-                        f"🔁 Guarantee resend: err={np.degrees(error_to_latest):.2f}°  "
-                        f"settled={time_since_moving:.1f}s"
-                    )
     
     def shutdown(self):
         """ปิดทุกอย่างอย่างเรียบร้อย"""
