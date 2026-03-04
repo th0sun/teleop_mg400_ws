@@ -21,7 +21,8 @@ import math
 from teleop_logic.config.robot_config import SPATIAL_THRESHOLD
 from teleop_logic.config.motion_config import ( PROXIMITY_THRESHOLD,
      STUCK_VELOCITY_THRESHOLD, STUCK_TIME_THRESHOLD,
-    TARGET_CHANGE_THRESHOLD, MAX_SPEED_DEG, DYNAMIC_PROXIMITY_BASE_RAD, DYNAMIC_PROXIMITY_LOOKAHEAD_SEC
+    TARGET_CHANGE_THRESHOLD, MAX_SPEED_DEG, DYNAMIC_PROXIMITY_BASE_RAD,
+    DYNAMIC_PROXIMITY_LOOKAHEAD_SEC, MIN_SEND_INTERVAL_SEC
 )
 
 class TeleopController:
@@ -102,6 +103,11 @@ class TeleopController:
             self.last_sent_target = latest_target
             self.last_sent_time = now
             return True, "Init"
+        
+        # 🕒 Rate Limiter — prevents flooding Dobot with rapid JointMovJ calls
+        # that interrupt each other mid-trajectory causing overshoot/oscillation.
+        if (now - self.last_sent_time) < MIN_SEND_INTERVAL_SEC:
+            return False, "RateLimit"
             
         # 1. Update State
         self.update_robot_state(q_current, now)
