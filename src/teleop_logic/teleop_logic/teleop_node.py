@@ -387,17 +387,35 @@ class TeleopNode(Node):
             
             # --- 🕒 CLOCK SYNCHRONIZATION (kept for latency tracking) ---
             # Calibrates the clock offset between Unity (Mac) and ROS (Ubuntu).
-            # Not used for prediction anymore but still needed for:
-            # - Accurate T1 → T2 latency measurement in LatencyAnalyzer
-            # - CSV logging with correct timestamps
             unity_send_time_sec = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
             now_ros_sec = self.get_clock().now().nanoseconds * 1e-9
             corrected_unity_time = self.clock_calibrator.calibrate(unity_send_time_sec, now_ros_sec)
             
-            # 📊 Publish raw (validated) target for GUI graph (no prediction)
+            # --- 🎯 ADAPTIVE KALMAN PREDICTION (Anti-Overshoot Damping) ---
+            # Compensates for combined network + firmware execution latency.
+            # Horizon = real measured T1→T3 + T3→T4, not a hardcoded constant.
+            q_actual = self.feedback.get_current_position()
+            
+            # Anti-Overshoot: Dynamic Horizon Damping
+            # Reduce prediction aggressiveness based on distance to target
+            dist_to_target = np.linalg.norm(q_safe - q_actual)
+            velocity_mag_scalar = np.max(np.abs(self.controller.robot_velocity))
+            
+            # Base = full adaptive horizon, drops as robot approaches and slows
+            dist_scale = np.clip(dist_to_target / 0.10, 0.1, 1.0)
+            vel_scale  = np.clip(velocity_mag_scalar / 0.05, 0.0, 1.0)
+            dynamic_horizon_override = self.predictor.horizon * dist_scale * vel_scale
+            
+            # Temporarily override horizon for this frame
+            original_horizon = self.predictor.horizon
+            self.predictor.horizon = dynamic_horizon_override
+            predicted_q = self.predictor.update_and_predict(q_safe, corrected_unity_time, q_actual=q_actual)
+            self.predictor.horizon = original_horizon
+            
+            # 📊 Publish predicted target for GUI graph
             pred_msg = JointState()
             pred_msg.header.stamp = self.get_clock().now().to_msg()
-            pred_msg.position = q_safe.tolist()
+            pred_msg.position = predicted_q.tolist()
             self.pub_predicted_target.publish(pred_msg)
             
             # 📊 Publish Unity Input XYZ (FK of raw Unity joint angles, degrees)
@@ -413,12 +431,14 @@ class TeleopNode(Node):
             self.log_queue.put(('CSV', [
                 now_ros_sec, corrected_unity_time,
                 q_safe[0], q_safe[1], q_safe[2], q_safe[3],
-                q_safe[0], q_safe[1], q_safe[2], q_safe[3]
+                predicted_q[0], predicted_q[1], predicted_q[2], predicted_q[3]
             ]))
                 
-            # 2. Update Latest Target (Raw validated - no Kalman prediction)
+            # Update Latest Target
+            # - latest_raw_target: passed to Experimental modes (bypass Kalman)
+            # - latest_target: Kalman-predicted (latency-compensated) for Mode 0
             self.latest_raw_target = q_safe
-            self.latest_target = q_safe          # ← Direct pass-through, no prediction
+            self.latest_target = predicted_q   # ← Kalman-predicted target
             self.target_recv_time = now_ros_sec
             self.unity_send_time = corrected_unity_time  # T1: calibrated Unity send time
             
@@ -615,6 +635,15 @@ class TeleopNode(Node):
                             metrics['target'], metrics['final_q'],
                             metrics['final_error'], metrics['max_error'], metrics['velocity'], metrics['is_valid']
                         ]))
+                        
+                        # 🎯 Feed real latency measurements back into the predictor
+                        # This makes the Kalman horizon adapt to actual network conditions
+                        # instead of relying on a fixed 80ms constant.
+                        if metrics.get('command_ms', 0) > 0:
+                            self.predictor.set_measured_latency(
+                                command_ms=metrics['command_ms'],
+                                robot_response_ms=metrics.get('response_ms', 0.0)
+                            )
 
             
             # ---------------------------------------------------------
