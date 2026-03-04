@@ -93,17 +93,18 @@ class UnityTcpBridge:
             # Server strips leading '__' and calls getattr(syscommands, 'publish').
             # JSON keys must match SysCommands.publish(topic, message_name, ...) signature.
             pubs = [
-                ("/unity/joint_cmd", "sensor_msgs/msg/JointState"),
-                ("/vr/suction_cmd", "std_msgs/msg/Bool"),
-                ("/mg400/light_cmd", "std_msgs/msg/Int32MultiArray"),
-                ("/unity/enable_robot", "std_msgs/msg/Bool"),
-                ("/unity/clear_error", "std_msgs/msg/Empty"),
-                ("/unity/emergency_stop", "std_msgs/msg/Bool"),
-                ("/unity/speed_factor", "std_msgs/msg/Int32"),
-                ("/unity/control_mode", "std_msgs/msg/String"),
+                ("/unity/joint_cmd", "sensor_msgs/JointState"),
+                ("/vr/suction_cmd", "std_msgs/Bool"),
+                ("/mg400/light_cmd", "std_msgs/Int32MultiArray"),
+                ("/unity/enable_robot", "std_msgs/Bool"),
+                ("/unity/clear_error", "std_msgs/Empty"),
+                ("/unity/emergency_stop", "std_msgs/Bool"),
+                ("/unity/speed_factor", "std_msgs/Int32"),
+                ("/unity/control_mode", "std_msgs/String"),
             ]
             for topic, msg_type in pubs:
-                req = json.dumps({"topic": topic, "message_name": msg_type}).encode('utf-8')
+                # Server does data.decode('utf-8')[:-1], so append trailing \x00
+                req = json.dumps({"topic": topic, "message_name": msg_type}).encode('utf-8') + b'\x00'
                 self._send_msg('__publish', req)
 
             self.connected = True
