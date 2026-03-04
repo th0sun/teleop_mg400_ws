@@ -396,24 +396,23 @@ class TeleopNode(Node):
             now_ros_sec = self.get_clock().now().nanoseconds * 1e-9
             corrected_unity_time = self.clock_calibrator.calibrate(unity_send_time_sec, now_ros_sec)
             
-            # --- 🎯 ADAPTIVE KALMAN PREDICTION (Anti-Overshoot Damping) ---
-            # Compensates for combined network + firmware execution latency.
-            # Horizon = real measured T1→T3 + T3→T4, not a hardcoded constant.
+            # --- 🎯 SMART KALMAN PREDICTION —— Latency-Adaptive, Per-Joint Horizon ---
+            # Prediction horizon = adaptive (from real measured T1→T3+T4 via set_measured_latency)
+            # Each joint gets its OWN horizon scaled by its own velocity and tracking error
+            # This exactly matches old project's per-joint behavior while adding real latency adapt.
             q_actual = self.feedback.get_current_position()
             
-            # Anti-Overshoot: Dynamic Horizon Damping
-            # Reduce prediction aggressiveness based on distance to target
+            # Per-joint velocity and distance scaling (old project used array, not scalar!)
+            robot_vel_per_joint = self.controller.robot_velocity           # np.array [4]
             dist_to_target = np.linalg.norm(q_safe - q_actual)
-            velocity_mag_scalar = np.max(np.abs(self.controller.robot_velocity))
             
-            # Base = full adaptive horizon, drops as robot approaches and slows
-            dist_scale = np.clip(dist_to_target / 0.10, 0.1, 1.0)
-            vel_scale  = np.clip(velocity_mag_scalar / 0.05, 0.0, 1.0)
-            dynamic_horizon_override = self.predictor.horizon * dist_scale * vel_scale
+            dist_scale = np.clip(dist_to_target / 0.10, 0.1, 1.0)         # scalar
+            vel_scale  = np.clip(robot_vel_per_joint / 0.05, 0.0, 1.0)    # per-joint array
+            dynamic_horizon = self.predictor.horizon * dist_scale * vel_scale  # per-joint array
             
-            # Temporarily override horizon for this frame
+            # Temporarily override horizon for this frame then restore
             original_horizon = self.predictor.horizon
-            self.predictor.horizon = dynamic_horizon_override
+            self.predictor.horizon = dynamic_horizon
             predicted_q = self.predictor.update_and_predict(q_safe, corrected_unity_time, q_actual=q_actual)
             self.predictor.horizon = original_horizon
             

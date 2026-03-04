@@ -570,7 +570,7 @@ class MonitorGUI:
         
         joint_labels = ["J1 (°)", "J2 (°)", "J3 (°)", "J4 (°)"]
         self.axes = []
-        self.graph_lines = []  # list of (unity_line, sent_line, actual_line) per joint
+        self.graph_lines = []  # list of (unity_line, predicted_line, sent_line, actual_line) per joint
         
         # Rolling time axis (relative time in seconds)
         max_points = int(GRAPH_WINDOW_SEC * 50)  # 50Hz max data rate => 500 pts
