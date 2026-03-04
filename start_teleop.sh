@@ -6,6 +6,7 @@
 # ==========================================
 
 SESSION_NAME="mg400_teleop"
+DEFAULT_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
 
 # Option: Cleanup
 if [ "$1" = "clean" ]; then
@@ -20,6 +21,8 @@ clear
 echo "=========================================="
 echo " 🤖 MG400 Teleop Manager "
 echo "=========================================="
+echo "ROS_DOMAIN_ID (DDS domain): $DEFAULT_DOMAIN_ID"
+echo "(set ROS_DOMAIN_ID before running to override)"
 echo "[ STEP 1: Select Robot Backend ]"
 echo "1. Real MG400 Robot"
 echo "2. Mock Robot (Docker)"
@@ -45,8 +48,9 @@ if [[ ! "$FRONTEND_CHOICE" =~ ^[1-4]$ ]]; then
     exit 1
 fi
 
-# Ensure no old session is running
+# Ensure no old session is running and lock domain ID
 tmux kill-session -t $SESSION_NAME 2>/dev/null
+export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID
 
 # ==========================================
 # 1. Setup Robot Backend
@@ -84,6 +88,7 @@ echo "🚀 Starting ROS 2 systems in Tmux..."
 tmux new-session -d -s $SESSION_NAME
 
 # Pane 0: Teleop Node (ROS 2 Core)
+tmux send-keys -t $SESSION_NAME:0.0 "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID" C-m
 tmux send-keys -t $SESSION_NAME:0.0 "source install/setup.bash" C-m
 tmux send-keys -t $SESSION_NAME:0.0 "export ROBOT_IP=$ROBOT_IP" C-m
 tmux send-keys -t $SESSION_NAME:0.0 "ros2 run teleop_logic teleop_node" C-m
@@ -95,6 +100,7 @@ tmux send-keys -t $SESSION_NAME:0.0 "ros2 run teleop_logic teleop_node" C-m
 # If not 'None', split the window
 if [ "$FRONTEND_CHOICE" != "4" ]; then
     tmux split-window -h -t $SESSION_NAME:0
+    tmux send-keys -t $SESSION_NAME:0.1 "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID" C-m
     tmux send-keys -t $SESSION_NAME:0.1 "source install/setup.bash" C-m
 fi
 
