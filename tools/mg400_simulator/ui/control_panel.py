@@ -345,7 +345,7 @@ class ControlPanel(QWidget):
         
         h = QHBoxLayout()
         h.addWidget(_label('Host:'))
-        self._ros_host = QLineEdit('192.168.1.6')
+        self._ros_host = QLineEdit('192.168.1.11')
         h.addWidget(self._ros_host)
         
         h.addWidget(_label('Port:'))

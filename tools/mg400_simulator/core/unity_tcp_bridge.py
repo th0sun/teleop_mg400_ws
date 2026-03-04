@@ -89,11 +89,9 @@ class UnityTcpBridge:
             self.sock.connect((host, port))
             self.sock.settimeout(None)
             
-            # Handshake
-            handshake = json.dumps({"metadata": {"protocol": "ROS2"}}).encode('utf-8')
-            self._send_msg('__handshake', handshake)
-            
-            # Register Publishers
+            # Register Publishers (maps to SysCommands.publish on the server)
+            # Server strips leading '__' and calls getattr(syscommands, 'publish').
+            # JSON keys must match SysCommands.publish(topic, message_name, ...) signature.
             pubs = [
                 ("/unity/joint_cmd", "sensor_msgs/msg/JointState"),
                 ("/vr/suction_cmd", "std_msgs/msg/Bool"),
