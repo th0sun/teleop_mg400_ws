@@ -556,7 +556,6 @@ class MonitorGUI:
         
         legends = [
             ("Unity Raw", COL_UNITY),
-            ("Predicted", COL_PREDICTED),
             ("Cmd Sent", COL_SENT),
             ("Actual", COL_ACTUAL),
         ]
@@ -570,13 +569,12 @@ class MonitorGUI:
         
         joint_labels = ["J1 (°)", "J2 (°)", "J3 (°)", "J4 (°)"]
         self.axes = []
-        self.graph_lines = []  # list of (unity_line, pred_line, sent_line, actual_line) per joint
+        self.graph_lines = []  # list of (unity_line, sent_line, actual_line) per joint
         
         # Rolling time axis (relative time in seconds)
         max_points = int(GRAPH_WINDOW_SEC * 50)  # 50Hz max data rate => 500 pts
         self.time_buffer = deque(maxlen=max_points)
         self.unity_buffers = [deque(maxlen=max_points) for _ in range(4)]
-        self.pred_buffers = [deque(maxlen=max_points) for _ in range(4)]
         self.sent_buffers = [deque(maxlen=max_points) for _ in range(4)]
         self.actual_buffers = [deque(maxlen=max_points) for _ in range(4)]
         self.last_sent_values = [0.0] * 4  # Hold-last for staircase sent line
@@ -596,17 +594,16 @@ class MonitorGUI:
             ax.spines['right'].set_visible(False)
             ax.grid(True, color="#e0e0e0", linewidth=0.5, linestyle="--")
 
-            l_unity,  = ax.plot([], [], color=COL_UNITY, lw=1.2, linestyle="--", alpha=0.8, label="Unity")
-            l_pred,   = ax.plot([], [], color=COL_PREDICTED, lw=1.0, alpha=0.85, label="Predicted")
-            # Changed from continuous line to discrete dots for Sent commands
-            l_sent,   = ax.plot([], [], color=COL_SENT, marker='o', markersize=4, linestyle='None', alpha=0.9, label="Sent")
+            l_unity,  = ax.plot([], [], color=COL_UNITY, lw=1.2, linestyle="--", alpha=0.8, label="Unity Raw")
+            # Cmd Sent: dots only when a command is actually dispatched
+            l_sent,   = ax.plot([], [], color=COL_SENT, marker='o', markersize=4, linestyle='None', alpha=0.9, label="Cmd Sent")
             l_actual, = ax.plot([], [], color=COL_ACTUAL, lw=1.5, label="Actual")
 
             if i == 3:
                 ax.set_xlabel("Time (s)", color="gray", fontsize=9)
 
             self.axes.append(ax)
-            self.graph_lines.append((l_unity, l_pred, l_sent, l_actual))
+            self.graph_lines.append((l_unity, l_sent, l_actual))
         
         canvas = FigureCanvasTkAgg(self.fig, master=parent)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -630,10 +627,8 @@ class MonitorGUI:
         self.time_buffer.append(rel_t)
         for i in range(4):
             self.unity_buffers[i].append(self.node.latest_target_joints[i])
-            self.pred_buffers[i].append(self.node.latest_predicted_joints[i])
             
-            # For "Sent" commands, we only want to plot dots exactly when a command was sent.
-            # If no new command was sent, append NaN so no dot is drawn.
+            # For "Sent" commands, only plot dots exactly when a command was sent.
             if self.node.sent_fresh[i]:
                 self.sent_buffers[i].append(self.node.latest_sent_joints[i])
                 self.node.sent_fresh[i] = False
@@ -646,16 +641,14 @@ class MonitorGUI:
         
         all_lines = []
         for i in range(4):
-            l_unity, l_pred, l_sent, l_actual = self.graph_lines[i]
+            l_unity, l_sent, l_actual = self.graph_lines[i]
             ax = self.axes[i]
             
             u = np.array(self.unity_buffers[i])
-            p = np.array(self.pred_buffers[i])
             s = np.array(self.sent_buffers[i])
             a = np.array(self.actual_buffers[i])
             
             l_unity.set_data(t_arr, u)
-            l_pred.set_data(t_arr, p)
             l_sent.set_data(t_arr, s)
             l_actual.set_data(t_arr, a)
             
@@ -663,14 +656,13 @@ class MonitorGUI:
             ax.set_xlim(max(0, rel_t - GRAPH_WINDOW_SEC), rel_t + 0.5)
             
             if len(a) > 0:
-                all_vals = np.concatenate([u, p, s, a])
-                # Use nanmin/nanmax because 's' (sent) contains np.nan
+                all_vals = np.concatenate([u, s, a])
                 mn, mx = np.nanmin(all_vals), np.nanmax(all_vals)
                 if not np.isnan(mn) and not np.isnan(mx):
                     pad = max(2.0, (mx - mn) * 0.15)
                     ax.set_ylim(mn - pad, mx + pad)
             
-            all_lines.extend([l_unity, l_pred, l_sent, l_actual])
+            all_lines.extend([l_unity, l_sent, l_actual])
         
         return all_lines
 
