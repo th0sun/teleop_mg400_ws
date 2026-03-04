@@ -396,25 +396,24 @@ class TeleopNode(Node):
             now_ros_sec = self.get_clock().now().nanoseconds * 1e-9
             corrected_unity_time = self.clock_calibrator.calibrate(unity_send_time_sec, now_ros_sec)
             
-            # --- 🎯 SMART KALMAN PREDICTION —— Latency-Adaptive, Per-Joint Horizon ---
-            # Prediction horizon = adaptive (from real measured T1→T3+T4 via set_measured_latency)
-            # Each joint gets its OWN horizon scaled by its own velocity and tracking error
-            # This exactly matches old project's per-joint behavior while adding real latency adapt.
+            # --- Kalman Filter Prediction (with Anti-Overshoot) ---
+            # Overcome physical robot inertia by predicting targets +80ms into the future
+            # Use calibrated send time to ensure accurate dt calculation even over Tailscale
             q_actual = self.feedback.get_current_position()
             
-            # Per-joint velocity and distance scaling (old project used array, not scalar!)
-            robot_vel_per_joint = self.controller.robot_velocity           # np.array [4]
+            # Anti-Overshoot: Dynamic Prediction Damping
             dist_to_target = np.linalg.norm(q_safe - q_actual)
+            velocity_mag = self.controller.robot_velocity  # per-joint array [4]
             
-            dist_scale = np.clip(dist_to_target / 0.10, 0.1, 1.0)         # scalar
-            vel_scale  = np.clip(robot_vel_per_joint / 0.05, 0.0, 1.0)    # per-joint array
-            dynamic_horizon = self.predictor.horizon * dist_scale * vel_scale  # per-joint array
+            # Reduce horizon if close to target or moving slowly
+            # Base = 80ms, drops to ~8ms when dist < 0.1 rad
+            base_horizon = 0.08
+            dist_scale = np.clip(dist_to_target / 0.1, 0.1, 1.0)
+            vel_scale  = np.clip(velocity_mag / 0.05, 0.0, 1.0)
+            dynamic_horizon = base_horizon * dist_scale * vel_scale
             
-            # Temporarily override horizon for this frame then restore
-            original_horizon = self.predictor.horizon
-            self.predictor.horizon = dynamic_horizon
+            self.predictor.prediction_horizon_sec = dynamic_horizon
             predicted_q = self.predictor.update_and_predict(q_safe, corrected_unity_time, q_actual=q_actual)
-            self.predictor.horizon = original_horizon
             
             # 📊 Publish predicted target for GUI graph
             pred_msg = JointState()
@@ -510,13 +509,16 @@ class TeleopNode(Node):
         motion_config.SPEED_NEAR   = factor
         
         # Send SpeedFactor() API to robot hardware so it actually changes speed
+        # Run in background thread — never block the ROS callback thread
         if self.connection.connected:
-            try:
-                self.connection.send_and_wait(f"SpeedFactor({factor})", timeout=1.0)
-            except Exception as e:
-                self.get_logger().warn(f"⚠️ SpeedFactor API failed: {e}")
+            def _send_speed():
+                try:
+                    self.connection.send_and_wait(f"SpeedFactor({factor})", timeout=1.0)
+                except Exception as e:
+                    self.get_logger().warn(f"⚠️ SpeedFactor API failed: {e}")
+            threading.Thread(target=_send_speed, daemon=True).start()
         
-        self.get_logger().info(f"🎚️ Speed set to {factor}% (SpeedFactor API sent)")
+        self.get_logger().info(f"🎚️ Speed set to {factor}%")
     
     def _light_callback(self, msg):
         """Callback for external light control (e.g. from GUI)"""
