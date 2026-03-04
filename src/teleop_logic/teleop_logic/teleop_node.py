@@ -373,7 +373,7 @@ class TeleopNode(Node):
         
         try:
             # 1. Validate & Clamp Joints
-            q_target = np.array(msg.position)
+            q_target = np.array(msg.position[:4])
             
             # 🛡️ Anti-NaN Protection
             if np.any(np.isnan(q_target)):
@@ -385,37 +385,12 @@ class TeleopNode(Node):
             if was_clamped:
                 self.get_logger().warn("⚠️ Joint command exceeded limits - clamped to safe range", once=True)
             
-            # 2. Extract Unity timestamp (T1) and ROS timestamp (T2)
-            unity_send_time_sec = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
             now_ros_sec = self.get_clock().now().nanoseconds * 1e-9
             
-            # --- 🕒 DYNAMIC CLOCK SYNCHRONIZATION (Triple-Lock) ---
-            # Level 2 & 3: Filtered Min-Window + Drift Compensation
-            corrected_unity_time = self.clock_calibrator.calibrate(unity_send_time_sec, now_ros_sec)
-            
-            # 3. Kalman Filter Prediction (with Anti-Overshoot)
-            # Overcome physical robot inertia by predicting targets +80ms into the future
-            # Use calibrated send time to ensure accurate dt calculation even over Tailscale
-            q_actual = self.feedback.get_current_position()
-            
-            # --- Anti-Overshoot: Dynamic Prediction Damping ---
-            dist_to_target = np.linalg.norm(q_safe - q_actual)
-            velocity_mag = self.controller.robot_velocity
-            
-            # Reduce horizon if close to target or moving slowly
-            # Base = 80ms, drops to 10ms when dist < 0.1 rad
-            base_horizon = 0.08
-            dist_scale = np.clip(dist_to_target / 0.1, 0.1, 1.0)
-            vel_scale = np.clip(velocity_mag / 0.05, 0.0, 1.0)
-            dynamic_horizon = base_horizon * dist_scale * vel_scale
-            
-            self.predictor.prediction_horizon_sec = dynamic_horizon
-            predicted_q = self.predictor.update_and_predict(q_safe, corrected_unity_time, q_actual=q_actual)
-            
-            # 📊 Publish Predicted Target for GUI graph
+            # 📊 Publish raw (validated) target for GUI graph (no prediction)
             pred_msg = JointState()
             pred_msg.header.stamp = self.get_clock().now().to_msg()
-            pred_msg.position = predicted_q.tolist()
+            pred_msg.position = q_safe.tolist()
             self.pub_predicted_target.publish(pred_msg)
             
             # 📊 Publish Unity Input XYZ (FK of raw Unity joint angles, degrees)
@@ -429,16 +404,15 @@ class TeleopNode(Node):
             
             # --- Log to CSV (Async) ---
             self.log_queue.put(('CSV', [
-                now_ros_sec, corrected_unity_time,
+                now_ros_sec, now_ros_sec,
                 q_safe[0], q_safe[1], q_safe[2], q_safe[3],
-                predicted_q[0], predicted_q[1], predicted_q[2], predicted_q[3]
+                q_safe[0], q_safe[1], q_safe[2], q_safe[3]
             ]))
                 
-            # 4. Update Latest Target (Do NOT send here - control_loop will decide when to send)
-            self.latest_raw_target = q_safe              # Raw validated (before prediction)
-            self.latest_target = predicted_q
-            self.target_recv_time = now_ros_sec          # T2: ROS receive time
-            self.unity_send_time = corrected_unity_time  # T1: Calibrated Unity send time
+            # 2. Update Latest Target (Raw validated - no Kalman prediction)
+            self.latest_raw_target = q_safe
+            self.latest_target = q_safe          # ← Direct pass-through, no prediction
+            self.target_recv_time = now_ros_sec
             
         except Exception as e:
             self.get_logger().error(f"Error in _unity_callback: {e}")

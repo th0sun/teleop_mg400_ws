@@ -482,6 +482,8 @@
           upper="3.14"
           effort="0"
           velocity="0" />
+      <!-- Passive: mirrors j2_1 to form the parallel 4-bar linkage -->
+      <mimic joint="${prefix}mg400_j2_1" multiplier="1" offset="0" />
     </joint>
     <joint
         name="${prefix}mg400_j3_1"
@@ -497,6 +499,8 @@
           upper="3.14"
           effort="0"
           velocity="0" />
+      <!-- Passive: negative of j2_1 to keep bottom rods parallel -->
+      <mimic joint="${prefix}mg400_j2_1" multiplier="-1" offset="0" />
     </joint>
     <joint
         name="${prefix}mg400_j3_2"
@@ -512,6 +516,8 @@
           upper="3.14"
           effort="0"
           velocity="0" />
+      <!-- Passive: negative of j2_1 (via j2_2 mirror) -->
+      <mimic joint="${prefix}mg400_j2_1" multiplier="-1" offset="0" />
     </joint>
     <joint
         name="${prefix}mg400_j4_1"
@@ -527,6 +533,8 @@
           upper="3.14"
           effort="0"
           velocity="0" />
+      <!-- Passive: negative of j3 to enforce end-effector perpendicularity -->
+      <mimic joint="${prefix}mg400_j3" multiplier="-1" offset="0" />
     </joint>
     <joint
         name="${prefix}mg400_j4_2"
@@ -542,6 +550,8 @@
           upper="3.14"
           effort="0"
           velocity="0" />
+      <!-- Passive: mirrors j3 -->
+      <mimic joint="${prefix}mg400_j3" multiplier="1" offset="0" />
     </joint>
     <joint
         name="${prefix}mg400_j4_3"

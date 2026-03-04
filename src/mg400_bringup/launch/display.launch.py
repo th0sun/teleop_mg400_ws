@@ -40,7 +40,7 @@ def generate_launch_description():
     # Set launch configuration
     workspace_visible = LaunchConfiguration('workspace_visible', default='False')
 
-    # Create nodes
+    # robot_state_publisher — reads URDF/xacro and publishes TF + /robot_description
     rsp_node = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [PathJoinSubstitution([this_package_path, 'launch', 'rsp.launch.py'])]
@@ -48,13 +48,10 @@ def generate_launch_description():
         launch_arguments=[('workspace_visible', workspace_visible)],
     )
 
-    jsp_node = Node(
-        package='joint_state_publisher_gui',
-        executable='joint_state_publisher_gui',
-        name='joint_state_publisher_gui',
-        on_exit=Shutdown(),
-    )
-
+    # rviz2 with display.rviz config
+    # NOTE: joint_state_publisher_gui is intentionally removed.
+    # When teleop_node runs, FeedbackHandler publishes /joint_states (all joints
+    # including passive). The gui node would conflict with live data.
     rviz_node = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [PathJoinSubstitution([this_package_path, 'launch', 'rviz.launch.py'])]
@@ -66,12 +63,8 @@ def generate_launch_description():
         ],
     )
 
-    # Create launch description
     ld = LaunchDescription()
-    # Add arguments
     ld.add_action(arg_workspace_visible)
-    # Add nodes
     ld.add_action(rsp_node)
-    ld.add_action(jsp_node)
     ld.add_action(rviz_node)
     return ld
