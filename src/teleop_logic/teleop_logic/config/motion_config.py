@@ -13,10 +13,8 @@
 
 # ⚡ Speed & Acceleration Settings
 MAX_SPEED_DEG = 300.0  # Maximum joint speed (degrees/sec)
-ACC_VALUE = 80         # Acceleration value (0-100) — lower = smoother
-CP_VALUE = 0           # Continuous Path value (0=stop at each point, 100=blend max)
-                       # ⚠️ CP=100 causes robot to overshoot past waypoints in teleop!
-                       # CP=0 = precise stopping, best for real-time teleoperation.
+ACC_VALUE = 100        # Acceleration value (0-100)
+CP_VALUE = 100         # Continuous Path value (smoothness: 0-100)
 
 # 🎮 Adaptive Speed Thresholds
 # กำหนดความเร็วตามระยะห่างจากเป้าหมาย
@@ -24,9 +22,13 @@ SPEED_FAR_THRESHOLD = 0.1      # > 0.1 rad → use SPEED_FAR
 SPEED_MEDIUM_THRESHOLD = 0.05  # > 0.05 rad → use SPEED_MEDIUM
 # < 0.05 rad → use SPEED_NEAR (ใกล้เป้าหมาย ช้าลง)
 
-SPEED_FAR    = 80   # %  — fast approach
-SPEED_MEDIUM = 60   # %  — normal tracking 
-SPEED_NEAR   = 40   # %  — precise fine approach
+SPEED_FAR    = 100    # %
+SPEED_MEDIUM = 100    # %
+SPEED_NEAR   = 100    # %
+
+# 🎚️ Speed Override — controlled by /unity/speed_factor topic from mock_frontend
+# 0-100 overrides ALL speed tiers when set. 0 = disabled (use adaptive tiers above)
+SPEED_OVERRIDE = 0   # read-only at runtime, written by teleop_node subscriber
 
 #  Real-Time Control Parameters (Proximity + Velocity-Based Stuck Detection)
 # ปรับค่านี้เพื่อควบคุมความไวและความเร็วในการตอบสนอง

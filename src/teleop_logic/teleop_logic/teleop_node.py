@@ -229,6 +229,11 @@ class TeleopNode(Node):
             Bool, SUCTION_TOPIC, self._suction_callback, 10
         )
         
+        # 🎚️ Speed Factor (from mock_frontend slider: 0-100)
+        self.sub_speed = self.create_subscription(
+            Int32, '/unity/speed_factor', self._speed_factor_callback, 10
+        )
+        
         # Light Control
         self.sub_lights = self.create_subscription(
             Int32MultiArray, LIGHT_TOPIC, self._light_callback, 10
@@ -489,6 +494,16 @@ class TeleopNode(Node):
                     self.get_logger().error(f"Error in turn_off_blow timer: {e}")
             
             threading.Timer(motion_config.BLOW_DURATION, turn_off_blow).start()
+    
+    def _speed_factor_callback(self, msg):
+        """Receive speed factor from mock_frontend slider (0-100) and apply globally."""
+        factor = int(np.clip(msg.data, 1, 100))
+        motion_config.SPEED_OVERRIDE = factor
+        # Propagate to motion planner's thresholds at runtime
+        motion_config.SPEED_FAR    = factor
+        motion_config.SPEED_MEDIUM = factor
+        motion_config.SPEED_NEAR   = factor
+        self.get_logger().info(f"🎚️ Speed override set to {factor}%")
     
     def _light_callback(self, msg):
         """Callback for external light control (e.g. from GUI)"""
