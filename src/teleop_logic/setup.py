@@ -11,7 +11,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', ['launch/teleop_all.launch.py']),
     ],
-    install_requires=['setuptools', 'numpy'],
+    install_requires=['setuptools', 'numpy', 'matplotlib'],
     zip_safe=True,
     maintainer='thesun',
     maintainer_email='thesun@teleop.dev',
