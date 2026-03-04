@@ -134,8 +134,10 @@ class UnityTcpBridge:
 
     def publish_joint_cmd(self, joints_deg: List[float]):
         if not self.connected: return
+        print(f'[UnityTcpBridge] publish_joint_cmd called: {joints_deg}')
         joints_rad = [math.radians(j) for j in joints_deg]
         cdr = cdr_joint_state(['joint1', 'joint2', 'joint3', 'joint4'], joints_rad)
+        print(f'[UnityTcpBridge] CDR payload: {len(cdr)} bytes')
         self._send_msg('/unity/joint_cmd', cdr)
 
     def publish_dashboard_cmd(self, cmd: str):

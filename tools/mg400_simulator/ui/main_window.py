@@ -190,9 +190,11 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(list)
     def _on_viewport_joints(self, joints: list):
-        """Viewport (EE drag) → update panel sliders."""
+        """Viewport (EE drag) → update panel sliders + stream to ROS."""
         self._panel.set_joints(joints)
         self._teach.set_current_joints(joints)
+        if self._ros.connected:
+            self._ros.publish_joint_cmd(joints)
 
     @pyqtSlot(float, float, float)
     def _on_ee_dragged(self, x, y, z):
@@ -200,9 +202,11 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(list)
     def _on_panel_joints(self, joints: list):
-        """Panel slider → update viewport."""
+        """Panel slider → update viewport + stream to ROS."""
         self._viewport.set_joints(joints)
         self._teach.set_current_joints(joints)
+        if self._ros.connected:
+            self._ros.publish_joint_cmd(joints)
 
     @pyqtSlot(list)
     def _on_teach_goto(self, joints: list):
