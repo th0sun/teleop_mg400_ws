@@ -497,12 +497,26 @@ class TeleopNode(Node):
     def _speed_factor_callback(self, msg):
         """Receive speed factor from mock_frontend slider (0-100) and apply globally."""
         factor = int(np.clip(msg.data, 1, 100))
+        
+        # Deduplicate: only act if value actually changed
+        if factor == getattr(self, '_last_speed_factor', None):
+            return
+        self._last_speed_factor = factor
+        
+        # Update motion_config tiers at runtime
         motion_config.SPEED_OVERRIDE = factor
-        # Propagate to motion planner's thresholds at runtime
         motion_config.SPEED_FAR    = factor
         motion_config.SPEED_MEDIUM = factor
         motion_config.SPEED_NEAR   = factor
-        self.get_logger().info(f"🎚️ Speed override set to {factor}%")
+        
+        # Send SpeedFactor() API to robot hardware so it actually changes speed
+        if self.connection.connected:
+            try:
+                self.connection.send_and_wait(f"SpeedFactor({factor})", timeout=1.0)
+            except Exception as e:
+                self.get_logger().warn(f"⚠️ SpeedFactor API failed: {e}")
+        
+        self.get_logger().info(f"🎚️ Speed set to {factor}% (SpeedFactor API sent)")
     
     def _light_callback(self, msg):
         """Callback for external light control (e.g. from GUI)"""
