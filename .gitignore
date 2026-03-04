@@ -13,3 +13,5 @@ log/
 # Virtual environments
 venv/
 .env/
+.venv/
+tools/mg400_simulator/.venv/
