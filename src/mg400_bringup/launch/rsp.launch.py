@@ -28,6 +28,7 @@ from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
 from launch.substitutions import TextSubstitution
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def load_robot_description(xacro_filepath: Path, xacro_options: List[Tuple] = None) -> Dict:
@@ -53,7 +54,7 @@ def load_robot_description(xacro_filepath: Path, xacro_options: List[Tuple] = No
                 robot_description_content = file.read()
         except EnvironmentError:
             exit(1)
-    return {'robot_description': robot_description_content}
+    return {'robot_description': ParameterValue(robot_description_content, value_type=str)}
 
 
 def generate_launch_description():
