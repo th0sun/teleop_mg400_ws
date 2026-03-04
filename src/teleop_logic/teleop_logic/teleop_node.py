@@ -738,11 +738,52 @@ class TeleopNode(Node):
                     
                     self.log_queue.put(('TELEOP_PERF', [
                         now, self.unity_send_time, self.target_recv_time, t3_cmd_send,
-                        0.0, 0.0, # Network delay calculated in analyzer report
+                        0.0, 0.0,
                         q_current, self.latest_target,
                         dist_to_last, send_reason,
                         time_since_last, velocity_mag, self.controller.robot_velocity
                     ]))
+            
+            # ──────────────────────────────────────────────────────
+            # 🔁 LAST-TARGET GUARANTEE (Raw Target)
+            # Sends the true raw hand position after the robot has settled,
+            # ensuring final position matches real hand regardless of Kalman offset.
+            # Only fires when robot is truly still — prevents oscillation.
+            # ──────────────────────────────────────────────────────
+            _velocity_mag  = np.max(np.abs(self.controller.robot_velocity))
+            _raw_error     = np.max(np.abs(q_current - self.latest_raw_target))
+            _now_t         = time.time()
+
+            if _velocity_mag > 0.003:
+                self._last_moving_time = _now_t
+
+            _settled_for  = _now_t - getattr(self, '_last_moving_time', _now_t)
+            _retry_ago    = _now_t - getattr(self, '_last_guarantee_time', 0.0)
+            SETTLE_SEC    = 1.5   # s — wait truly stopped before retry
+            ERROR_THRESH  = 0.035 # rad (~2°) — only retry if error is meaningful
+
+            if (_settled_for >= SETTLE_SEC and
+                    _raw_error > ERROR_THRESH and
+                    _retry_ago >= SETTLE_SEC and
+                    self.latest_raw_target is not None):
+
+                cmd_str, q_safe = self.controller.format_command_string(
+                    self.latest_raw_target, q_current=q_current, force_send=True)
+
+                if cmd_str and self.sender.send(cmd_str):
+                    self._last_guarantee_time = _now_t
+                    self.controller.last_sent_target = q_safe
+                    self.controller.last_sent_time   = _now_t
+
+                    _sm = JointState()
+                    _sm.header.stamp = self.get_clock().now().to_msg()
+                    _sm.position = q_safe.tolist()
+                    self.pub_sent_command.publish(_sm)
+
+                    self.get_logger().info(
+                        f"🔁 Guarantee → raw target: err={np.degrees(_raw_error):.2f}° "
+                        f"settled={_settled_for:.1f}s"
+                    )
     
     def shutdown(self):
         """ปิดทุกอย่างอย่างเรียบร้อย"""

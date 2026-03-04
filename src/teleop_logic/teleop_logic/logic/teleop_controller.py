@@ -155,8 +155,9 @@ class TeleopController:
         if is_clamped:
             self.logger.warn("⚠️ Joint command exceeded limits - clamped to safe range")
             
-        # Calculate speed
-        speed_percent = 100 
+        # Calculate speed using planner's distance-based logic
+        # (SPEED_FAR / SPEED_MEDIUM / SPEED_NEAR from motion_config)
+        speed_percent = self.planner.calculate_speed(q_safe, q_current) if q_current is not None else 100
         
         # โหมดปกติ (Single Point) เพื่อความลื่นไหลที่สุด
         cmd_str = self.planner.format_command(q_safe, speed_percent)
