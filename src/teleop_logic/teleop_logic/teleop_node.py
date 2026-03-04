@@ -385,7 +385,14 @@ class TeleopNode(Node):
             if was_clamped:
                 self.get_logger().warn("⚠️ Joint command exceeded limits - clamped to safe range", once=True)
             
+            # --- 🕒 CLOCK SYNCHRONIZATION (kept for latency tracking) ---
+            # Calibrates the clock offset between Unity (Mac) and ROS (Ubuntu).
+            # Not used for prediction anymore but still needed for:
+            # - Accurate T1 → T2 latency measurement in LatencyAnalyzer
+            # - CSV logging with correct timestamps
+            unity_send_time_sec = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
             now_ros_sec = self.get_clock().now().nanoseconds * 1e-9
+            corrected_unity_time = self.clock_calibrator.calibrate(unity_send_time_sec, now_ros_sec)
             
             # 📊 Publish raw (validated) target for GUI graph (no prediction)
             pred_msg = JointState()
@@ -404,7 +411,7 @@ class TeleopNode(Node):
             
             # --- Log to CSV (Async) ---
             self.log_queue.put(('CSV', [
-                now_ros_sec, now_ros_sec,
+                now_ros_sec, corrected_unity_time,
                 q_safe[0], q_safe[1], q_safe[2], q_safe[3],
                 q_safe[0], q_safe[1], q_safe[2], q_safe[3]
             ]))
@@ -413,6 +420,7 @@ class TeleopNode(Node):
             self.latest_raw_target = q_safe
             self.latest_target = q_safe          # ← Direct pass-through, no prediction
             self.target_recv_time = now_ros_sec
+            self.unity_send_time = corrected_unity_time  # T1: calibrated Unity send time
             
         except Exception as e:
             self.get_logger().error(f"Error in _unity_callback: {e}")
