@@ -48,6 +48,18 @@ if [[ ! "$FRONTEND_CHOICE" =~ ^[1-4]$ ]]; then
     exit 1
 fi
 
+echo ""
+echo "[ STEP 3: Tmux View Mode ]"
+echo "1. Attach now (show tmux panes immediately)"
+echo "2. Run in background (detach; attach later with 'tmux attach -t $SESSION_NAME')"
+echo "------------------------------------------"
+read -p "Select View Mode (1-2): " VIEW_MODE
+
+if [[ ! "$VIEW_MODE" =~ ^[1-2]$ ]]; then
+    echo "❌ Invalid selection. Exiting."
+    exit 1
+fi
+
 # Ensure no old session is running and lock domain ID
 tmux kill-session -t $SESSION_NAME 2>/dev/null
 export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID
@@ -86,6 +98,7 @@ echo "🚀 Starting ROS 2 systems in Tmux..."
 
 # Create new tmux session in detached mode
 tmux new-session -d -s $SESSION_NAME
+tmux set-option -t $SESSION_NAME mouse on > /dev/null
 
 # Pane 0: Teleop Node (ROS 2 Core)
 tmux send-keys -t $SESSION_NAME:0.0 "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID" C-m
@@ -118,6 +131,9 @@ elif [ "$FRONTEND_CHOICE" = "3" ]; then
     tmux send-keys -t $SESSION_NAME:0.1 "ros2 run teleop_logic mock_frontend" C-m
 fi
 
-# Attach to the session so the user can see logs
-tmux attach-session -t $SESSION_NAME
-
+if [ "$VIEW_MODE" = "1" ]; then
+    tmux attach-session -t $SESSION_NAME
+else
+    echo "✅ All processes running inside tmux session '$SESSION_NAME'."
+    echo "👉 Attach later with: tmux attach -t $SESSION_NAME"
+fi
