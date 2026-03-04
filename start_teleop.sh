@@ -118,6 +118,24 @@ elif [ "$ROBOT_CHOICE" = "2" ]; then
     echo "✅ Mock Robot running at IP: $ROBOT_IP"
 fi
 
+# ==========================================
+# 2. Setup Frontend
+# ==========================================
+echo ""
+echo "[ STEP 3: Optional Visualization ]"
+echo "y. Launch RViz (Visualizer) on this machine"
+echo "n. Headless (No RViz)"
+echo "------------------------------------------"
+read -p "Launch RViz? (y/N): " RVIZ_CHOICE
+
+# Ensure no old session is running and lock domain ID
+tmux kill-session -t $SESSION_NAME 2>/dev/null
+export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID
+
+# ==========================================
+# 3. Setup Tmux Session & Nodes
+# ==========================================
+
 echo "🚀 Starting ROS 2 systems in Tmux..."
 
 # Create new tmux session in detached mode
@@ -126,9 +144,11 @@ tmux new-session -d -s $SESSION_NAME
 # Pane 0: Teleop Node (ROS 2 Core) — always runs
 tmux send-keys -t $SESSION_NAME:0.0 "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID && source install/setup.bash && export ROBOT_IP=$ROBOT_IP && ros2 run teleop_logic teleop_node; exec bash" C-m
 
-# ==========================================
-# 2. Setup Frontend
-# ==========================================
+if [ "$RVIZ_CHOICE" = "y" ] || [ "$RVIZ_CHOICE" = "Y" ]; then
+    # Launch RSP and RViz separately to avoid joint_state_publisher_gui conflict
+    tmux new-window -t $SESSION_NAME -n "Visualization"
+    tmux send-keys -t $SESSION_NAME:1 "export ROS_DOMAIN_ID=$DEFAULT_DOMAIN_ID && source install/setup.bash && ros2 launch mg400_bringup rsp.launch.py & ros2 launch mg400_bringup rviz.launch.py; exec bash" C-m
+fi
 
 if [ "$FRONTEND_CHOICE" = "1" ]; then
     # ── Python 3-D Simulator (needs ros_tcp_endpoint + local simulator) ──
