@@ -119,21 +119,25 @@ cd tools/mock_robot && docker-compose up
 
 ### Unified Launcher (Matrix: Robot × Frontend)
 
-ใช้งาน `start_teleop.sh` เพื่อเลือกคู่ผสม **Robot Backend × Frontend** แบบเมนู:
+ใช้งาน `start_teleop.sh` เพื่อจัดการระบบแบบครอบคลุมทั้งบน **Linux และ macOS**:
 
+**บน Linux (Ubuntu)**: จะเป็นการเลือกคู่ผสม **Robot Backend × Frontend** แบบเมนู:
 1. เลือก Robot Backend
    - Real MG400 Robot (ค่าดีฟอลต์ IP = `192.168.1.6` ปรับได้ในไฟล์)
-   - Mock Robot (Docker) → สคริปต์จะ `docker compose up` แล้ว inspect IP ให้อัตโนมัติ
+   - Mock Robot (Docker) → สคริปต์จะ `docker compose up` แล้วดึง IP ให้อัตโนมัติ
 2. เลือก Frontend
-   - Python 3-D Simulator (PyQt5)
-   - Unity App (ros_tcp_endpoint)
+   - Python 3-D Simulator (`mg400_simulator` + Unity Mock TCP)
+   - Unity App (เตรียม `ros_tcp_endpoint` พอร์ต 10000 รอรับการเชื่อมต่อ)
    - CLI Mock Frontend (`ros2 run teleop_logic mock_frontend`)
    - None (headless teleop node)
 
-ตัวสคริปต์จะสร้าง tmux session (`mg400_teleop`) พร้อมตั้ง `ROBOT_IP` และ **propagate `ROS_DOMAIN_ID`** ไปทุก pane (ค่าเริ่มต้น = 0 หากไม่ได้ export ไว้ก่อน)
+ตัวสคริปต์จะสร้าง tmux session (`mg400_teleop`) พร้อมตั้ง `ROBOT_IP` และ **propagate `ROS_DOMAIN_ID`** และจัดการเปิด `ros_tcp_endpoint` ให้อัตโนมัติเมื่อเลือก Simulator หรือ Unity
+
+**บน macOS**:
+สคริปต์จะตรวจจับ OS อัตโนมัติและทำการรัน **Python 3-D Simulator ในโหมด Unity Mock** ฟีเจอร์นี้ให้คุณรัน Simulator บนแมคและเชื่อมต่อไปยังเครื่อง Ubuntu ได้ทันทีโดยไม่ต้องติดตั้ง ROS 2 (rclpy) บนแมคเลย!
 
 ```bash
-# เปิดเมนูเลือก Robot × Frontend
+# เปิดเมนูเลือก Robot × Frontend (Linux) หรือเปิด Simulator (macOS)
 ./start_teleop.sh
 
 # ล้าง tmux + docker mock ที่รันอยู่
@@ -197,5 +201,4 @@ cd tools/mock_robot && docker-compose up
 | `mg400_rviz_plugin` | Unity เป็น frontend แทน RViz |
 | `mg400_node/Qt GUI` | Unity + mock_frontend แทน |
 | `mg400_bringup/rviz/` | ไม่ใช้ RViz เป็นหลัก |
-| `mg400_simulator` | ใช้ MG400_Mock แทน |
 | `HarvestX .github/, doc/, media/` | CI/doc ไม่จำเป็น |

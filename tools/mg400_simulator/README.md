@@ -67,45 +67,30 @@ python3 tools/mg400_simulator/main.py
 # → enable "Connect to ROS 2" in the control panel
 ```
 
-### Running Simulator remotely (e.g., Mac/Windows client ↔ Ubuntu ROS 2 host)
-
-You can run the rich 3-D simulator natively on your personal machine (Mac/Windows) while the ROS 2 core and robot logic run on a separate Ubuntu machine or VM. As long as they are on the same local network, they can communicate via `FastRTPS`/`CycloneDDS` Discovery.
-
-**1. On the Ubuntu ROS 2 Host:**
-Ensure the machine is connected to the same local network as your client.
-```bash
-# Export a specific Domain ID to isolate traffic and ensure discovery
-export ROS_DOMAIN_ID=0
-source ~/teleop_mg400_ws/install/setup.bash
-
-# Run your teleop node (and mock robot if needed)
-ros2 run teleop_logic teleop_node
-```
-
-### Running Simulator as a Unity Mock (Mac/Windows)
+### Running Simulator on Mac / Windows (Unity Mock Mode)
 
 Since `rclpy` cannot be easily installed on macOS or Windows, the simulator features a built-in **Unity TCP Mock**. This allows the Python simulator to masquerade as the Unity VR Client and communicate directly with the `ros-tcp-endpoint` (Port 10000) on your Ubuntu machine without needing a native ROS 2 distribution installed locally.
 
-**On the Ubuntu Machine (Robot Controller):**
-1. Start the complete teleop stack which includes `teleop_node` and `ros-tcp-endpoint`:
-   ```bash
-   ros2 launch teleop_logic teleop_all.launch.py ros_ip:=0.0.0.0
-   ```
-   *(Note down the IP address of this Ubuntu machine, e.g., `192.168.1.6`)*
+**1. On the Ubuntu Machine (Robot Controller):**
+Start the complete teleop stack specifying the Unity Frontend:
+```bash
+./start_teleop.sh
+# Select: 1 or 2 (Robot) -> 2 (Unity App)
+```
+*(Note down the IP address of this Ubuntu machine, e.g., `192.168.1.6`)*
 
-**On your Mac/Windows Machine (Simulator):**
-1. Start the simulator normally:
-   ```bash
-   ./run.sh
-   # or
-   source .venv/bin/activate
-   python3 main.py
-   ```
-2. In the right control panel under **"ROS 2 Bridge / Unity Mock"**: 
-   - Enter your Ubuntu machine's IP in the **Host** field.
-   - Leave the **Port** as `10000`.
-   - Check **"Connect"**.
-3. You can now control the robot remotely exactly as the Unity VR headset does!
+**2. On your Mac/Windows Machine (Simulator):**
+Run the launcher script at the root of the workspace:
+```bash
+./start_teleop.sh
+# The script will auto-detect macOS and launch the simulator!
+```
+In the right control panel under **"ROS 2 Bridge / Unity Mock"**: 
+- Enter your Ubuntu machine's IP in the **Host** field.
+- Leave the **Port** as `10000`.
+- Check **"Connect"**.
+
+You can now control the robot remotely exactly as the Unity VR headset does!
 
 ## Architecture
 
