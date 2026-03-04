@@ -46,10 +46,12 @@ sudo apt install python3-pyqt5 python3-opengl
 ```bash
 cd tools/mg400_simulator
 python3 main.py
-# Or use the convenience script: source run.sh
+# Or use the convenience script: ./run.sh
 ```
 
 ### With ROS 2 bridge (live robot / mock)
+
+If you are running the simulator on the same Linux machine as ROS 2:
 ```bash
 # Terminal 1 – start the mock robot
 cd tools/mock_robot && docker compose up -d
@@ -64,6 +66,39 @@ source ~/teleop_mg400_ws/install/setup.bash
 python3 tools/mg400_simulator/main.py
 # → enable "Connect to ROS 2" in the control panel
 ```
+
+### Running Simulator remotely (e.g., Mac/Windows client ↔ Ubuntu ROS 2 host)
+
+You can run the rich 3-D simulator natively on your personal machine (Mac/Windows) while the ROS 2 core and robot logic run on a separate Ubuntu machine or VM. As long as they are on the same local network, they can communicate via `FastRTPS`/`CycloneDDS` Discovery.
+
+**1. On the Ubuntu ROS 2 Host:**
+Ensure the machine is connected to the same local network as your client.
+```bash
+# Export a specific Domain ID to isolate traffic and ensure discovery
+export ROS_DOMAIN_ID=0
+source ~/teleop_mg400_ws/install/setup.bash
+
+# Run your teleop node (and mock robot if needed)
+ros2 run teleop_logic teleop_node
+```
+
+**2. On the Client Machine (Mac / Windows / etc.):**
+You *do not* need the full ROS 2 installation on the client. You only need the `rclpy` Python package installed in your simulator's virtual environment.
+```bash
+cd tools/mg400_simulator
+# Activate the venv
+source .venv/bin/activate
+
+# Install a standalone ROS 2 Python client
+pip install rosbags rclpy
+
+# Set the matching Domain ID to discover the Ubuntu host
+export ROS_DOMAIN_ID=0
+
+# Run the simulator
+python3 main.py
+```
+*Note: In the simulator UI, click the **"Connect to ROS 2"** checkbox. It will use the local Python `rclpy` to discover the `/joint_states_deg` and `/unity/joint_cmd` topics broadcasted over the network.*
 
 ## Architecture
 
