@@ -60,13 +60,16 @@ def cdr_joint_state(names: List[str], positions: List[float]) -> bytes:
     while len(cdr) % 4 != 0: cdr += b'\x00'
     cdr += struct.pack('<I', len(positions))
     
-    while len(cdr) % 8 != 0: cdr += b'\x00'
+    # CDR alignment for float64 (8 bytes):
+    # Alignment is from CDR data start (byte 4, after the 4-byte encapsulation header)
+    # Correct check: (len(cdr) - 4) % 8 == 0  →  i.e. len(cdr) % 8 == 4
+    while (len(cdr) - 4) % 8 != 0: cdr += b'\x00'
     for p in positions:
         cdr += struct.pack('<d', p)
         
     while len(cdr) % 4 != 0: cdr += b'\x00'
-    cdr += struct.pack('<I', 0)
-    cdr += struct.pack('<I', 0)
+    cdr += struct.pack('<I', 0)  # velocity array length = 0
+    cdr += struct.pack('<I', 0)  # effort array length = 0
     
     return bytes(cdr)
 
